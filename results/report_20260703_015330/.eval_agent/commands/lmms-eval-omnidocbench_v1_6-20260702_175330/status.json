@@ -1,0 +1,24 @@
+{
+  "action": "long_command",
+  "argv": [
+    "bash",
+    "scripts/evaluate_qwen3_5_vllm_agent.sh",
+    "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
+    "omnidocbench_v1_6",
+    "4"
+  ],
+  "command_id": "lmms-eval-omnidocbench_v1_6-20260702_175330",
+  "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+  "ended_at": "2026-07-02T17:58:12Z",
+  "label": "lmms-eval-old omnidocbench_v1_6",
+  "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_015330/.eval_agent/commands/lmms-eval-omnidocbench_v1_6-20260702_175330/output.log",
+  "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_015330/.eval_agent/commands/lmms-eval-omnidocbench_v1_6-20260702_175330/status.json",
+  "pid": 1146944,
+  "returncode": -15,
+  "signal": "SIGTERM",
+  "skill_type": "inference",
+  "spec_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_015330/.eval_agent/commands/lmms-eval-omnidocbench_v1_6-20260702_175330/spec.json",
+  "started_at": "2026-07-02T17:53:48Z",
+  "status": "cancelled",
+  "supervisor_pid": 1146942
+}

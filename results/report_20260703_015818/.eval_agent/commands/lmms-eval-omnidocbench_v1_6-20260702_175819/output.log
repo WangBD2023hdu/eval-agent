@@ -1,0 +1,424 @@
+==============================================
+  Qwen3.5-VLLM Evaluation
+==============================================
+  Model:          /inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416
+  Tensor Parallel: 2
+  Base port:       8000
+  Tasks:           omnidocbench_v1_6
+  Log dir:         ./logs/qwen3_5_vllm/omnidocbench_v1_6
+==============================================
+  Started vLLM on port 8000, PID=1160341
+>>> Waiting for vLLM server at http://127.0.0.1:8000/health...
+  vLLM server is ready.
+
+>>> Running lmms-eval...
+>>> accelerate launch --main_process_port 8100 --num_processes=1 -m lmms_eval 
+    --model qwen3_5_vllm     --model_args api_base=http://127.0.0.1:8000/v1,model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja     --tasks omnidocbench_v1_6     --batch_size 4     --log_samples     --log_samples_suffix qwen3_5_vllm     --output_path ./logs/qwen3_5_vllm/omnidocbench_v1_6
+
+
+/home/ma-user/anaconda3/lib/python3.12/site-packages/torch/cuda/__init__.py:65: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+/home/ma-user/anaconda3/lib/python3.12/site-packages/torch/cuda/__init__.py:65: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[32m2026-07-03 02:00:49.215[0m | [1mINFO    [0m | [36m__main__[0m:[36mcli_evaluate[0m:[36m295[0m - [1mVerbosity set to INFO[0m
+[32m2026-07-03 02:00:54.387[0m | [33m[1mWARNING [0m | [36mlmms_eval.tasks[0m:[36m_get_task_and_group[0m:[36m473[0m - [33m[1mThe tag olmocr_benchmark is already registered as a group, this tag will not be registered. This may affect tasks you want to call.[0m
+[32m2026-07-03 02:00:54.539[0m | [1mINFO    [0m | [36m__main__[0m:[36mcli_evaluate_single[0m:[36m378[0m - [1mEvaluation tracker args: {'output_path': './logs/qwen3_5_vllm/omnidocbench_v1_6'}[0m
+[32m2026-07-03 02:00:54.539[0m | [1mINFO    [0m | [36m__main__[0m:[36mcli_evaluate_single[0m:[36m467[0m - [1mSelected Tasks: ['omnidocbench_v1_6'][0m
+[32m2026-07-03 02:00:54.543[0m | [1mINFO    [0m | [36mlmms_eval.evaluator[0m:[36msimple_evaluate[0m:[36m156[0m - [1mSetting random seed to 0 | Setting numpy seed to 1234 | Setting torch manual seed to 1234[0m
+[32m2026-07-03 02:00:54.555[0m | [1mINFO    [0m | [36mlmms_eval.api.task[0m:[36m__init__[0m:[36m726[0m - [1mSet sharegpt_multiple_values as False[0m
+[32m2026-07-03 02:00:54.555[0m | [1mINFO    [0m | [36mlmms_eval.api.task[0m:[36mdownload[0m:[36m1062[0m - [1mUse original json dataset[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m119[0m - [1mmodel_version: /inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m120[0m - [1mapi_base: http://127.0.0.1:8000/v1[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m121[0m - [1mlatex_table_to_html: False[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m122[0m - [1mmarkdown_table_to_html: False[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m123[0m - [1mmax_images: 32[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m124[0m - [1menable_thinking: False[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m125[0m - [1mmin_pixels: 2592, max_pixels: 1806336[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m126[0m - [1muse_deep_parsing: False[0m
+[32m2026-07-03 02:00:57.700[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36m__init__[0m:[36m127[0m - [1msave_cropped_images: False[0m
+[32m2026-07-03 02:00:57.706[0m | [1mINFO    [0m | [36mlmms_eval.evaluator_utils[0m:[36mfrom_taskdict[0m:[36m91[0m - [1mNo metadata found in task config for omnidocbench_v1_6, using default n_shot=0[0m
+[32m2026-07-03 02:00:57.706[0m | [1mINFO    [0m | [36mlmms_eval.api.task[0m:[36mbuild_all_requests[0m:[36m425[0m - [1mBuilding contexts for omnidocbench_v1_6 on rank 0...[0m
+
+  0%|                                                                                                                                          | 0/1651 [00:00<?, ?it/s]
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1651/1651 [00:00<00:00, 26493.42it/s]
+[32m2026-07-03 02:00:57.770[0m | [1mINFO    [0m | [36mlmms_eval.evaluator[0m:[36mevaluate[0m:[36m448[0m - [1mRunning generate_until requests[0m
+
+Model Responding:   0%|                                                                                                                        | 0/1651 [00:00<?, ?it/s][32m2026-07-03 02:00:57.770[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:57.770[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:00:57.972[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:57.973[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:57.973[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:00:58.155[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:58.156[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:58.156[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:00:58.351[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:58.352[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:00:58.352[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:00:58.673[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:08.724[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:08.746[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:08.776[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:08.862[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:15.036[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:15.055[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:15.136[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:15.262[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:21.285[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:21.334[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:21.375[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:21.502[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:27.531[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:27.600[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:27.725[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:27.753[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:33.859[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:33.945[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:33.978[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+[32m2026-07-03 02:01:34.111[0m | [31m[1mERROR   [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36masync_request_single[0m:[36m293[0m - [31m[1mAPI request failed: Connection error.[0m
+
+Model Responding:   0%|▎                                                                                                             | 4/1651 [00:36<4:09:24,  9.09s/it][32m2026-07-03 02:01:34.114[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:34.114[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:01:34.350[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:34.351[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:34.351[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:01:34.543[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:34.547[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:34.548[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
+[32m2026-07-03 02:01:35.077[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m374[0m - [1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:35.078[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m327[0m - [1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
+
+1. Text Processing:
+- Accurately recognize all text content in the PDF image without guessing or inferring.
+- Convert the recognized text into Markdown format.
+- Maintain the original document structure, including headings, paragraphs, lists, etc.
+
+2. Mathematical Formula Processing:
+- Convert all mathematical formulas to LaTeX format.
+- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$
+- Enclose block formulas with $$ $$. For example: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+3. Table Processing:
+- Convert tables to HTML format.
+
+4. Figure Handling:
+- Ignore figures content in the PDF image. Do not attempt to describe or convert images.
+
+5. Output Format:
+- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.
+- For complex layouts, try to maintain the original document's structure and format as closely as possible.
+
+Please strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.[0m
+[32m2026-07-03 02:01:35.078[0m | [1mINFO    [0m | [36mlmms_eval.models.qwen3_5_vllm[0m:[36mgenerate_until[0m:[36m339[0m - [1mmin_pixels: 2048, max_pixels: 16777216[0m
