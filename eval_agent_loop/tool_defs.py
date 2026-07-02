@@ -74,6 +74,7 @@ def build_tools() -> list[dict[str, Any]]:
                         "commands_dir": {"type": "string"},
                         "metadata_path": {"type": "string"},
                         "timeout_sec": {"type": "number", "minimum": 1},
+                        "heartbeat_sec": {"type": "number", "minimum": 0.01},
                     },
                     "required": ["command_id"],
                     "additionalProperties": False,

@@ -11,6 +11,7 @@ from .file_tools import append_event, read_file, write_or_append
 from .long_commands import inspect_long_command, start_long_command, wait_long_command
 from .lmms import extract_lmms_eval_samples
 from .omnidocbench import extract_omnidocbench_metrics
+from .progress import Progress
 from .tool_defs import ALLOWED_ACTIONS, FORBIDDEN_ACTION_WORDS
 
 
@@ -59,14 +60,14 @@ def validate_action(action: dict[str, Any]) -> None:
         raise AgentLoopError(f"{lowered} requires message")
 
 
-def execute_action(action: dict[str, Any], *, workspace: Path) -> dict[str, Any]:
+def execute_action(action: dict[str, Any], *, workspace: Path, progress: Progress | None = None) -> dict[str, Any]:
     name = action["action"]
     if name == "run_command":
         return run_command(action, workspace=workspace)
     if name == "start_long_command":
         return start_long_command(action, workspace=workspace)
     if name == "wait_long_command":
-        return wait_long_command(action, workspace=workspace)
+        return wait_long_command(action, workspace=workspace, progress=progress)
     if name == "inspect_long_command":
         return inspect_long_command(action, workspace=workspace)
     if name == "read_file":
@@ -110,6 +111,9 @@ def _validate_long_command_lookup(action: dict[str, Any], action_name: str) -> N
     timeout = action.get("timeout_sec", 86400)
     if action_name == "wait_long_command" and (not isinstance(timeout, (int, float)) or timeout <= 0):
         raise AgentLoopError("wait_long_command.timeout_sec must be a positive number")
+    heartbeat = action.get("heartbeat_sec", 30)
+    if action_name == "wait_long_command" and (not isinstance(heartbeat, (int, float)) or heartbeat <= 0):
+        raise AgentLoopError("wait_long_command.heartbeat_sec must be a positive number")
 
 
 def _validate_argv_env(action: dict[str, Any], action_name: str) -> None:

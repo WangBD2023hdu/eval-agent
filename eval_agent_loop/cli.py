@@ -7,10 +7,13 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .client import OpenAIChatClient
 from .config import AgentConfig
 from .errors import AgentLoopError
+from .long_commands import cancel_active_long_commands
+from .progress import stderr_progress
 from .runner import run_loop
 
 
@@ -65,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         job_path=runtime.job_path,
         state_path=runtime.state_path,
         workspace=runtime.workspace,
+        progress=stderr_progress,
     )
     sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     return 0
@@ -73,6 +77,11 @@ def main(argv: list[str] | None = None) -> int:
 def entrypoint() -> int:
     try:
         return main()
+    except KeyboardInterrupt:
+        sys.stderr.write("\nagent-loop interrupted; cancelling active long commands...\n")
+        for result in cancel_active_long_commands():
+            sys.stderr.write(json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n")
+        return 130
     except AgentLoopError as exc:
         sys.stderr.write(f"agent-loop error: {exc}\n")
         return 2
@@ -94,6 +103,7 @@ def prepare_runtime(args: argparse.Namespace) -> RuntimePaths:
     if missing:
         joined = ", ".join("--" + name.replace("_", "-") for name in missing)
         raise AgentLoopError(f"--job is required unless generated-job fields are provided: {joined}")
+    _validate_generated_runtime(args)
 
     report_dir = Path(args.report_dir).resolve()
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -138,3 +148,21 @@ def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[
             "report_path": str(report_dir / "report.md"),
         },
     }
+
+
+def _validate_generated_runtime(args: argparse.Namespace) -> None:
+    if args.inference_skill != "lmms-eval-old" or not args.base_url:
+        return
+
+    parsed = urlparse(args.base_url)
+    hostname = parsed.hostname or ""
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise AgentLoopError(f"invalid --base-url: {args.base_url}") from exc
+    if hostname in {"127.0.0.1", "localhost", "::1"} and port == 8000:
+        raise AgentLoopError(
+            "agent --base-url uses local port 8000, but lmms-eval-old also uses "
+            "http://localhost:8000/v1 for inference. Start the agent model on a "
+            "different port, for example 8001, and pass --base-url http://127.0.0.1:8001/v1."
+        )

@@ -8,6 +8,7 @@ from typing import Any
 from .actions import execute_action
 from .errors import AgentLoopError
 from .messages import parse_tool_call
+from .progress import Progress
 
 
 TERMINAL_ACTIONS = {"finish", "ask_user"}
@@ -24,6 +25,7 @@ def execute_tool_call_batch(
     tool_calls: list[Any],
     *,
     workspace: Path,
+    progress: Progress | None = None,
     max_workers: int | None = None,
 ) -> list[ToolExecution]:
     actions = [parse_tool_call(tool_call) for tool_call in tool_calls]
@@ -34,7 +36,7 @@ def execute_tool_call_batch(
     worker_count = max_workers or len(actions)
     with ThreadPoolExecutor(max_workers=max(1, worker_count)) as executor:
         futures = [
-            executor.submit(execute_action, action, workspace=workspace)
+            executor.submit(execute_action, action, workspace=workspace, progress=progress)
             for action in actions
         ]
         results: list[ToolExecution] = []

@@ -45,6 +45,7 @@ class AgentLoopContractTests(unittest.TestCase):
             "eval_agent_loop.messages",
             "eval_agent_loop.omnidocbench",
             "eval_agent_loop.path_policy",
+            "eval_agent_loop.progress",
             "eval_agent_loop.runner",
             "eval_agent_loop.skills",
             "eval_agent_loop.state",
@@ -412,13 +413,72 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(result["returncode"], 0)
         self.assertIn("recoverable-done", result["log_tail"])
 
+    def test_wait_long_command_emits_heartbeat_progress(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            progress_events = []
+            start = agent_loop.execute_action(
+                {
+                    "action": "start_long_command",
+                    "argv": [sys.executable, "-c", "import time; time.sleep(0.3); print('done')"],
+                    "cwd": str(root),
+                    "skill_type": "evaluation",
+                    "label": "heartbeat-benchmark",
+                },
+                workspace=root,
+            )
+
+            result = agent_loop.execute_action(
+                {
+                    "action": "wait_long_command",
+                    "command_id": start["command_id"],
+                    "timeout_sec": 5,
+                    "heartbeat_sec": 0.05,
+                },
+                workspace=root,
+                progress=progress_events.append,
+            )
+
+        self.assertEqual(result["status"], "succeeded")
+        joined = "\n".join(progress_events)
+        self.assertIn("long_command_wait", joined)
+        self.assertIn(start["command_id"], joined)
+
+    def test_cancel_active_long_commands_terminates_running_process_group(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            start = agent_loop.execute_action(
+                {
+                    "action": "start_long_command",
+                    "argv": [sys.executable, "-c", "import time; time.sleep(30)"],
+                    "cwd": str(root),
+                    "skill_type": "evaluation",
+                    "label": "interruptible-benchmark",
+                },
+                workspace=root,
+            )
+
+            cancelled = agent_loop.cancel_active_long_commands(grace_sec=0.2)
+            result = agent_loop.execute_action(
+                {
+                    "action": "inspect_long_command",
+                    "command_id": start["command_id"],
+                    "metadata_path": start["metadata_path"],
+                },
+                workspace=root,
+            )
+
+        self.assertEqual(len(cancelled), 1)
+        self.assertEqual(result["status"], "cancelled")
+        self.assertEqual(result["command_id"], start["command_id"])
+
     def test_cli_can_generate_job_from_checkpoint_task_and_report_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
             report_dir = Path(tmp) / "report"
             args = agent_cli.parse_args(
                 [
                     "--base-url",
-                    "http://127.0.0.1:8000/v1",
+                    "http://127.0.0.1:8001/v1",
                     "--agent-model",
                     "qwen3-5",
                     "--checkpoint",
@@ -439,6 +499,29 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(job["outputs"]["report_dir"], str(report_dir.resolve()))
         self.assertEqual(runtime.state_path, report_dir.resolve() / "agent_state.json")
         self.assertEqual(runtime.workspace, report_dir.resolve())
+
+    def test_generated_lmms_eval_old_job_rejects_agent_on_local_port_8000(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp) / "report"
+            args = agent_cli.parse_args(
+                [
+                    "--base-url",
+                    "http://127.0.0.1:8000/v1",
+                    "--agent-model",
+                    "qwen-agent",
+                    "--checkpoint",
+                    "/models/checkpoint-a",
+                    "--task",
+                    "omnidocbench_v1_6",
+                    "--report-dir",
+                    str(report_dir),
+                    "--inference-skill",
+                    "lmms-eval-old",
+                ]
+            )
+
+            with self.assertRaisesRegex(agent_loop.AgentLoopError, "port 8000"):
+                agent_cli.prepare_runtime(args)
 
     def test_run_loop_executes_tool_calls_and_continues_until_finish(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -487,6 +570,59 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(len(client.calls), 2)
         second_messages = client.calls[1]["messages"]
         self.assertTrue(any(message.get("role") == "tool" and "tool-ok" in message.get("content", "") for message in second_messages))
+
+    def test_run_loop_emits_progress_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skills_dir = root / "SKILLS"
+            for name in ("inference", "evaluation", "task"):
+                skill_dir = skills_dir / name
+                skill_dir.mkdir(parents=True)
+                (skill_dir / "SKILL.md").write_text(f"# {name}\nreal instructions\n", encoding="utf-8")
+            job_path = root / "job.json"
+            job_path.write_text('{"run_id":"job-1"}', encoding="utf-8")
+            state_path = root / "state.json"
+            progress_events = []
+
+            client = ScriptedToolClient(
+                [
+                    agent_loop.AssistantTurn(
+                        content=None,
+                        tool_calls=[
+                            ToolCall(
+                                "call_1",
+                                "run_command",
+                                {"argv": [sys.executable, "-c", "print('tool-ok')"], "cwd": str(root), "timeout_sec": 10},
+                            )
+                        ],
+                    ),
+                    agent_loop.AssistantTurn(
+                        content=None,
+                        tool_calls=[
+                            ToolCall("call_2", "finish", {"message": "done"})
+                        ],
+                    ),
+                ]
+            )
+
+            result = agent_loop.run_loop(
+                client=client,
+                config=agent_loop.AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
+                skills_dir=skills_dir,
+                job_path=job_path,
+                state_path=state_path,
+                workspace=root,
+                progress=progress_events.append,
+            )
+
+        self.assertEqual(result["message"], "done")
+        joined = "\n".join(progress_events)
+        self.assertIn("agent_start", joined)
+        self.assertIn("model_request", joined)
+        self.assertIn("tool_batch_start", joined)
+        self.assertIn("run_command", joined)
+        self.assertIn("tool_result", joined)
+        self.assertIn("agent_stop", joined)
 
     def test_run_loop_executes_same_turn_tool_calls_concurrently(self):
         with tempfile.TemporaryDirectory() as tmp:
