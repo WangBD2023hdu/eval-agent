@@ -523,6 +523,53 @@ class AgentLoopContractTests(unittest.TestCase):
             with self.assertRaisesRegex(agent_loop.AgentLoopError, "port 8000"):
                 agent_cli.prepare_runtime(args)
 
+    def test_cli_records_worker_cuda_visible_devices_in_generated_job(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp) / "report"
+            args = agent_cli.parse_args(
+                [
+                    "--base-url",
+                    "http://127.0.0.1:6666/v1",
+                    "--agent-model",
+                    "qwen-agent",
+                    "--checkpoint",
+                    "/models/checkpoint-a",
+                    "--task",
+                    "omnidocbench_v1_6",
+                    "--report-dir",
+                    str(report_dir),
+                    "--worker-cuda-visible-devices",
+                    "0,1",
+                ]
+            )
+            runtime = agent_cli.prepare_runtime(args)
+            job = json.loads(runtime.job_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(job["runtime"]["worker_cuda_visible_devices"], "0,1")
+
+    def test_cli_worker_cuda_visible_devices_updates_process_environment(self):
+        args = agent_cli.parse_args(
+            [
+                "--base-url",
+                "http://127.0.0.1:6666/v1",
+                "--agent-model",
+                "qwen-agent",
+                "--checkpoint",
+                "/models/checkpoint-a",
+                "--task",
+                "omnidocbench_v1_6",
+                "--report-dir",
+                "report",
+                "--worker-cuda-visible-devices",
+                "0,1",
+            ]
+        )
+        env = {}
+
+        agent_cli.apply_worker_environment(args, env=env)
+
+        self.assertEqual(env["CUDA_VISIBLE_DEVICES"], "0,1")
+
     def test_run_loop_executes_tool_calls_and_continues_until_finish(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

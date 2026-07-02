@@ -39,6 +39,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--run-id", help="Run identifier for generated jobs")
     parser.add_argument("--inference-skill", default="lmms-eval-old", help="Inference skill name for generated jobs")
     parser.add_argument("--evaluation-skill", default="omnidocbench", help="Evaluation skill name for generated jobs")
+    parser.add_argument("--worker-cuda-visible-devices", help="CUDA_VISIBLE_DEVICES for skill subprocesses, e.g. 0,1")
     parser.add_argument("--max-iterations", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=None)
     return parser.parse_args(argv)
@@ -57,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         env["AGENT_MAX_ITERATIONS"] = str(args.max_iterations)
     if args.temperature is not None:
         env["AGENT_TEMPERATURE"] = str(args.temperature)
+    apply_worker_environment(args)
 
     runtime = prepare_runtime(args)
     config = AgentConfig.from_env(env)
@@ -85,6 +87,12 @@ def entrypoint() -> int:
     except AgentLoopError as exc:
         sys.stderr.write(f"agent-loop error: {exc}\n")
         return 2
+
+
+def apply_worker_environment(args: argparse.Namespace, *, env: dict[str, str] | None = None) -> None:
+    target = os.environ if env is None else env
+    if args.worker_cuda_visible_devices:
+        target["CUDA_VISIBLE_DEVICES"] = args.worker_cuda_visible_devices
 
 
 def prepare_runtime(args: argparse.Namespace) -> RuntimePaths:
@@ -141,6 +149,9 @@ def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[
         "evaluation": {
             "skill": args.evaluation_skill,
             "task": args.task,
+        },
+        "runtime": {
+            "worker_cuda_visible_devices": args.worker_cuda_visible_devices,
         },
         "outputs": {
             "root": str(report_dir),
