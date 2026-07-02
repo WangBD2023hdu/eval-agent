@@ -50,7 +50,7 @@ Use the agent loop `start_long_command` action with `cwd` set to the working dir
   "label": "lmms-eval-old omnidocbench_v1_6",
   "argv": [
     "bash",
-    "scripts/evaluate_qwen3_5_vllm.sh",
+    "scripts/evaluate_qwen3_5_vllm_agent.sh",
     "model_version=<model_weight>,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
     "<task>"
   ]
@@ -60,7 +60,7 @@ Use the agent loop `start_long_command` action with `cwd` set to the working dir
 For the default values, the effective command is:
 
 ```bash
-bash scripts/evaluate_qwen3_5_vllm.sh "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja" "omnidocbench_v1_6"
+bash scripts/evaluate_qwen3_5_vllm_agent.sh "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja" "omnidocbench_v1_6"
 ```
 
 ## Completion Rules

@@ -570,6 +570,26 @@ class AgentLoopContractTests(unittest.TestCase):
 
         self.assertEqual(env["CUDA_VISIBLE_DEVICES"], "0,1")
 
+    def test_lmms_eval_old_script_checks_root_health_without_proxy(self):
+        script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")
+
+        self.assertIn('HEALTH_URL="http://127.0.0.1:${BASE_PORT}/health"', script)
+        self.assertIn('API_BASE="http://127.0.0.1:${BASE_PORT}/v1"', script)
+        self.assertIn('curl --noproxy "*"', script)
+        self.assertNotIn('${url}/health', script)
+
+    def test_lmms_eval_old_cleanup_does_not_kill_all_gpu_processes(self):
+        script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")
+
+        self.assertNotIn("fuser -k -9 /dev/nvidia*", script)
+
+    def test_qwen3_5_vllm_client_does_not_use_environment_proxies(self):
+        source = Path("lmms-eval-old/lmms_eval/models/qwen3_5_vllm.py").read_text(encoding="utf-8")
+
+        self.assertIn("import httpx", source)
+        self.assertIn("httpx.AsyncClient(trust_env=False)", source)
+        self.assertIn("http_client=", source)
+
     def test_run_loop_executes_tool_calls_and_continues_until_finish(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
