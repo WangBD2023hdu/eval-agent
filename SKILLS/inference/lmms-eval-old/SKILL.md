@@ -28,6 +28,8 @@ tensor_parallel_size=2
 prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja
 ```
 
+Default batch size for this skill is 4. Keep it explicit as the third script argument because OmniDocBench PDF/image requests can overload the local vLLM server at the script default of 32. Only increase it when the user explicitly asks.
+
 ## Working Directory
 
 Always run from:
@@ -52,7 +54,8 @@ Use the agent loop `start_long_command` action with `cwd` set to the working dir
     "bash",
     "scripts/evaluate_qwen3_5_vllm_agent.sh",
     "model_version=<model_weight>,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
-    "<task>"
+    "<task>",
+    "4"
   ]
 }
 ```
@@ -60,7 +63,7 @@ Use the agent loop `start_long_command` action with `cwd` set to the working dir
 For the default values, the effective command is:
 
 ```bash
-bash scripts/evaluate_qwen3_5_vllm_agent.sh "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja" "omnidocbench_v1_6"
+bash scripts/evaluate_qwen3_5_vllm_agent.sh "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja" "omnidocbench_v1_6" "4"
 ```
 
 ## Completion Rules

@@ -570,6 +570,43 @@ class AgentLoopContractTests(unittest.TestCase):
 
         self.assertEqual(env["CUDA_VISIBLE_DEVICES"], "0,1")
 
+    def test_cli_worker_environment_adds_local_no_proxy_entries(self):
+        args = agent_cli.parse_args(
+            [
+                "--base-url",
+                "http://127.0.0.1:6666/v1",
+                "--agent-model",
+                "qwen-agent",
+                "--checkpoint",
+                "/models/checkpoint-a",
+                "--task",
+                "omnidocbench_v1_6",
+                "--report-dir",
+                "report",
+            ]
+        )
+        env = {"NO_PROXY": "example.com", "no_proxy": "foo.local"}
+
+        agent_cli.apply_worker_environment(args, env=env)
+
+        for key in ("NO_PROXY", "no_proxy"):
+            self.assertIn("127.0.0.1", env[key])
+            self.assertIn("localhost", env[key])
+            self.assertEqual(env[key].count("127.0.0.1"), 1)
+
+    def test_agent_openai_client_does_not_use_environment_proxies(self):
+        source = Path("eval_agent_loop/client.py").read_text(encoding="utf-8")
+
+        self.assertIn("import httpx", source)
+        self.assertIn("httpx.Client(trust_env=False)", source)
+        self.assertIn("http_client=", source)
+
+    def test_lmms_eval_old_skill_limits_default_batch_size(self):
+        skill = Path("SKILLS/inference/lmms-eval-old/SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("Default batch size for this skill is 4", skill)
+        self.assertIn('"4"', skill)
+
     def test_lmms_eval_old_script_checks_root_health_without_proxy(self):
         script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")
 
@@ -589,6 +626,7 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("import httpx", source)
         self.assertIn("httpx.AsyncClient(trust_env=False)", source)
         self.assertIn("http_client=", source)
+        self.assertIn("{type(e).__name__}: {e!r}", source)
 
     def test_run_loop_executes_tool_calls_and_continues_until_finish(self):
         with tempfile.TemporaryDirectory() as tmp:

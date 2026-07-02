@@ -17,9 +17,14 @@ class OpenAIChatClient:
     def __init__(self, config: AgentConfig):
         try:
             from openai import OpenAI
+            import httpx
         except ImportError as exc:
             raise AgentLoopError("The openai package is required. Install it before running the agent loop.") from exc
-        self._client = OpenAI(base_url=config.base_url, api_key=config.api_key)
+        self._client = OpenAI(
+            base_url=config.base_url,
+            api_key=config.api_key,
+            http_client=httpx.Client(trust_env=False),
+        )
         self._config = config
 
     def complete(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> AssistantTurn:

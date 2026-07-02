@@ -17,6 +17,9 @@ from .progress import stderr_progress
 from .runner import run_loop
 
 
+LOCAL_NO_PROXY_ENTRIES = ("localhost", "127.0.0.1", "127.0.1.1", "0.0.0.0", "::1")
+
+
 @dataclass(frozen=True)
 class RuntimePaths:
     job_path: Path
@@ -93,6 +96,18 @@ def apply_worker_environment(args: argparse.Namespace, *, env: dict[str, str] | 
     target = os.environ if env is None else env
     if args.worker_cuda_visible_devices:
         target["CUDA_VISIBLE_DEVICES"] = args.worker_cuda_visible_devices
+    _append_local_no_proxy(target, "NO_PROXY")
+    _append_local_no_proxy(target, "no_proxy")
+
+
+def _append_local_no_proxy(env: dict[str, str], key: str) -> None:
+    existing = [item.strip() for item in env.get(key, "").split(",") if item.strip()]
+    seen = set(existing)
+    for entry in LOCAL_NO_PROXY_ENTRIES:
+        if entry not in seen:
+            existing.append(entry)
+            seen.add(entry)
+    env[key] = ",".join(existing)
 
 
 def prepare_runtime(args: argparse.Namespace) -> RuntimePaths:
