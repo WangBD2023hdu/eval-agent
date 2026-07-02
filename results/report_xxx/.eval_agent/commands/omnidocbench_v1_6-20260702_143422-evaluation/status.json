@@ -1,0 +1,22 @@
+{
+  "action": "long_command",
+  "argv": [
+    "python",
+    "pdf_validation.py",
+    "--input_file=/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/lmms-eval-old/logs/qwen3_5_vllm/omnidocbench_v1_6/20260702_223701_samples_omnidocbench_v1_6.jsonl"
+  ],
+  "command_id": "omnidocbench_v1_6-20260702_143422-evaluation",
+  "cwd": "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench",
+  "ended_at": "2026-07-02T15:35:45Z",
+  "label": "omnidocbench evaluation",
+  "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-evaluation/output.log",
+  "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-evaluation/status.json",
+  "pid": 657748,
+  "returncode": 0,
+  "signal": null,
+  "skill_type": "evaluation",
+  "spec_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-evaluation/spec.json",
+  "started_at": "2026-07-02T15:22:33Z",
+  "status": "succeeded",
+  "supervisor_pid": 657746
+}

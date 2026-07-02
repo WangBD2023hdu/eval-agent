@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "python",
+    "pdf_validation.py",
+    "--input_file=/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/lmms-eval-old/logs/qwen3_5_vllm/omnidocbench_v1_6/20260702_223701_samples_omnidocbench_v1_6.jsonl"
+  ],
+  "cwd": "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench",
+  "env": {},
+  "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-evaluation/output.log",
+  "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-evaluation/status.json"
+}
