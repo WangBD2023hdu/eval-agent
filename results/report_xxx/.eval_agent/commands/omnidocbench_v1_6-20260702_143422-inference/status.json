@@ -1,0 +1,23 @@
+{
+  "action": "long_command",
+  "argv": [
+    "bash",
+    "scripts/evaluate_qwen3_5_vllm_agent.sh",
+    "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
+    "omnidocbench_v1_6"
+  ],
+  "command_id": "omnidocbench_v1_6-20260702_143422-inference",
+  "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+  "ended_at": null,
+  "label": "lmms-eval-old omnidocbench_v1_6 retry",
+  "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-inference/output.log",
+  "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-inference/status.json",
+  "pid": 537337,
+  "returncode": null,
+  "signal": null,
+  "skill_type": "inference",
+  "spec_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_143422-inference/spec.json",
+  "started_at": "2026-07-02T14:34:50Z",
+  "status": "running",
+  "supervisor_pid": 537335
+}

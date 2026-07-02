@@ -1,0 +1,30 @@
+{
+  "agent": {
+    "base_url": "http://127.0.0.1:6666/v1",
+    "model": "qwen-agent"
+  },
+  "checkpoint": {
+    "path": "/path/to/checkpoint"
+  },
+  "evaluation": {
+    "skill": "omnidocbench",
+    "task": "omnidocbench_v1_6"
+  },
+  "inference": {
+    "model_weight": "/path/to/checkpoint",
+    "skill": "lmms-eval-old",
+    "task": "omnidocbench_v1_6"
+  },
+  "outputs": {
+    "report_dir": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx",
+    "report_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/report.md",
+    "root": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx"
+  },
+  "run_id": "omnidocbench_v1_6-20260702_143422",
+  "runtime": {
+    "worker_cuda_visible_devices": "0,1"
+  },
+  "task": {
+    "name": "omnidocbench_v1_6"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "bash",
+    "scripts/evaluate_qwen3_5_vllm.sh",
+    "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
+    "omnidocbench_v1_6"
+  ],
+  "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+  "env": {},
+  "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_134806-inference/output.log",
+  "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_xxx/.eval_agent/commands/omnidocbench_v1_6-20260702_134806-inference/status.json"
+}
