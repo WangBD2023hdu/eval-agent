@@ -1,0 +1,21 @@
+run_id: example-qwen3-5-eval
+agent:
+  model: qwen3-5
+  base_url: http://127.0.0.1:8000/v1
+checkpoint:
+  path: /path/to/checkpoint/huggingface
+task:
+  name: omnidocbench_v1_6
+resources:
+  gpu_ids: [0, 1, 2, 3, 4, 5, 6, 7]
+inference:
+  skill: lmms-eval-old
+  model_weight: /path/to/checkpoint/huggingface
+  task: omnidocbench_v1_6
+evaluation:
+  skill: omnidocbench
+  task: omnidocbench_v1_6
+outputs:
+  root: runs/example-qwen3-5-eval
+  report_dir: runs/example-qwen3-5-eval
+  report_path: runs/example-qwen3-5-eval/report.md

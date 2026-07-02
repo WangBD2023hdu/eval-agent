@@ -1,0 +1,4 @@
+interface:
+  display_name: "OmniDocBench"
+  short_description: "Run OmniDocBench scoring and extract notebook metrics"
+  default_prompt: "Use $omnidocbench to score an LMMS Eval prediction JSONL and write the metrics to the Markdown report."

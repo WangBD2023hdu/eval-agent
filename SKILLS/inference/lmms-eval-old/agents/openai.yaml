@@ -1,0 +1,4 @@
+interface:
+  display_name: "LMMS Eval Old"
+  short_description: "Run the old LMMS Eval Qwen3.5 script"
+  default_prompt: "Use $lmms-eval-old to run the old LMMS Eval script with a model weight path and task name."
