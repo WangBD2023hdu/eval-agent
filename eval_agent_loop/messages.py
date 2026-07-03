@@ -9,14 +9,17 @@ from .errors import AgentLoopError
 
 def build_messages(
     *,
-    skills: dict[str, str],
+    skill_context: dict[str, Any] | None = None,
+    skills: dict[str, str] | None = None,
     job: Any,
     state: dict[str, Any],
     events: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     system = """You are an evaluation agent controller.
 
-You must follow the provided inference, evaluation, and task skills.
+The skill_context was loaded on demand for this job.
+When skill_context.active_task_skill exists, use it as the entry point and follow its sequence before using referenced inference or evaluation skills.
+Use only the referenced inference/evaluation skills in skill_context for this job unless the active task skill or user explicitly asks for another skill.
 Do not simulate, fake, mock, or invent inference outputs, benchmark metrics, files, logs, or command results.
 Use the provided tools. Do not describe a tool call in prose when you can call the tool.
 Use run_command only for real commands. Use read_file only for real files.
@@ -27,8 +30,12 @@ Tool calls returned in the same assistant turn are executed concurrently; only b
 Put dependent calls, GPU-contending calls, and terminal finish/ask_user calls in separate turns.
 If a required value is missing, call ask_user. When the job is complete, call finish.
 """
+    if skill_context is None:
+        if skills is None:
+            raise AgentLoopError("build_messages requires skill_context")
+        skill_context = {"legacy_skills": skills}
     payload = {
-        "skills": skills,
+        "skill_context": skill_context,
         "job": job,
         "state": state,
         "recent_events": events[-20:],

@@ -11,7 +11,7 @@ from .config import AgentConfig
 from .errors import AgentLoopError
 from .messages import build_messages, tool_call_to_message
 from .progress import Progress, emit
-from .skills import load_skill_bundle
+from .skills import load_skill_context
 from .state import load_structured_file, read_state, write_state
 from .tool_execution import execute_tool_call_batch
 from .tool_defs import build_tools
@@ -28,16 +28,23 @@ def run_loop(
     progress: Progress | None = None,
 ) -> dict[str, Any]:
     emit(progress, "agent_start", job_path=str(job_path), skills_dir=str(skills_dir), state_path=str(state_path) if state_path else None, workspace=str(workspace))
-    skills = load_skill_bundle(skills_dir)
     job = load_structured_file(job_path)
+    skill_context = load_skill_context(skills_dir, job)
     state = read_state(state_path)
     events = state.get("history", [])
     if not isinstance(events, list):
         events = []
 
     tools = build_tools()
-    messages: list[dict[str, Any]] = build_messages(skills=skills, job=job, state=state, events=events)
-    emit(progress, "context_loaded", skills=sorted(skills), history_count=len(events), tool_count=len(tools))
+    messages: list[dict[str, Any]] = build_messages(skill_context=skill_context, job=job, state=state, events=events)
+    emit(
+        progress,
+        "context_loaded",
+        skills=_selected_skill_names(skill_context),
+        available_skills=skill_context.get("available_skill_names", []),
+        history_count=len(events),
+        tool_count=len(tools),
+    )
     iteration = 0
     while iteration < config.max_iterations:
         iteration += 1
@@ -125,3 +132,19 @@ def _record(
     if tool_call_id:
         record["tool_call_id"] = tool_call_id
     return record
+
+
+def _selected_skill_names(skill_context: dict[str, Any]) -> list[str]:
+    selected = []
+    for key in (
+        "base_task_skill",
+        "active_task_skill",
+        "base_inference_skill",
+        "referenced_inference_skill",
+        "base_evaluation_skill",
+        "referenced_evaluation_skill",
+    ):
+        value = skill_context.get(key)
+        if isinstance(value, dict) and isinstance(value.get("name"), str):
+            selected.append(value["name"])
+    return selected

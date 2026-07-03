@@ -110,25 +110,77 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("inference/lmms-eval-old", bundle)
         self.assertIn("run old lmms eval", bundle["inference/lmms-eval-old"])
 
-    def test_build_messages_contains_job_state_and_skill_docs(self):
+    def test_select_skill_context_keeps_only_task_chain_skill_docs(self):
         skills = {
             "inference": "# inference\nrun real inference",
+            "inference/lmms-eval-old": "# lmms-eval-old\nrun selected inference",
+            "inference/unused": "# unused inference\nSHOULD_NOT_BE_IN_PROMPT",
             "evaluation": "# evaluation\nrun real scoring",
+            "evaluation/omnidocbench": "# omnidocbench\nrun selected evaluation",
+            "evaluation/unused": "# unused evaluation\nSHOULD_NOT_BE_IN_PROMPT",
             "task": "# task\nmanage jobs",
+            "task/omnidocbench_task": "# omnidocbench task\nfirst infer then evaluate",
+            "task/unused": "# unused task\nSHOULD_NOT_BE_IN_PROMPT",
         }
-        job = {"run_id": "job-1", "model": {"name": "tested-model"}}
+        job = {
+            "run_id": "job-1",
+            "task": {"name": "omnidocbench_v1_6", "skill": "omnidocbench_task"},
+            "inference": {"skill": "lmms-eval-old"},
+            "evaluation": {"skill": "omnidocbench"},
+        }
         state = {"status": "running"}
 
-        messages = agent_loop.build_messages(skills=skills, job=job, state=state, events=[])
+        skill_context = agent_loop.select_skill_context(skills, job)
+        messages = agent_loop.build_messages(skill_context=skill_context, job=job, state=state, events=[])
         joined = "\n".join(message["content"] for message in messages)
+        payload = json.loads(messages[1]["content"])
 
-        self.assertIn("# inference", joined)
-        self.assertIn("# evaluation", joined)
-        self.assertIn("# task", joined)
+        self.assertEqual(payload["skill_context"]["active_task_skill"]["name"], "task/omnidocbench_task")
+        self.assertEqual(payload["skill_context"]["referenced_inference_skill"]["name"], "inference/lmms-eval-old")
+        self.assertEqual(payload["skill_context"]["referenced_evaluation_skill"]["name"], "evaluation/omnidocbench")
+        self.assertIn("first infer then evaluate", joined)
+        self.assertIn("run selected inference", joined)
+        self.assertIn("run selected evaluation", joined)
+        self.assertNotIn("SHOULD_NOT_BE_IN_PROMPT", joined)
         self.assertIn('"run_id": "job-1"', joined)
         self.assertIn('"status": "running"', joined)
         self.assertIn("Do not simulate", joined)
         self.assertIn("workspace write root", joined)
+
+    def test_load_skill_context_reads_only_job_referenced_nested_skills(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "SKILLS"
+            for name in ("inference", "evaluation", "task"):
+                skill_dir = root / name
+                skill_dir.mkdir(parents=True)
+                (skill_dir / "SKILL.md").write_text(f"# {name}\nbase contract\n", encoding="utf-8")
+            for category, active, unused in (
+                ("task", "omnidocbench_task", "unused_task"),
+                ("inference", "lmms-eval-old", "unused_inference"),
+                ("evaluation", "omnidocbench", "unused_evaluation"),
+            ):
+                active_dir = root / category / active
+                active_dir.mkdir()
+                (active_dir / "SKILL.md").write_text(f"# {active}\nACTIVE_SKILL_CONTENT\n", encoding="utf-8")
+                unused_dir = root / category / unused
+                unused_dir.mkdir()
+                (unused_dir / "SKILL.md").write_text(f"# {unused}\nUNUSED_SKILL_CONTENT\n", encoding="utf-8")
+
+            context = agent_loop.load_skill_context(
+                root,
+                {
+                    "task": {"name": "omnidocbench_v1_6", "skill": "omnidocbench_task"},
+                    "inference": {"skill": "lmms-eval-old"},
+                    "evaluation": {"skill": "omnidocbench"},
+                },
+            )
+
+        joined = json.dumps(context, ensure_ascii=False, sort_keys=True)
+        self.assertIn("task/omnidocbench_task", joined)
+        self.assertIn("inference/lmms-eval-old", joined)
+        self.assertIn("evaluation/omnidocbench", joined)
+        self.assertIn("ACTIVE_SKILL_CONTENT", joined)
+        self.assertNotIn("UNUSED_SKILL_CONTENT", joined)
 
     def test_agent_tools_expose_command_line_tool(self):
         tools = agent_loop.build_tools()
@@ -495,6 +547,7 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(job["agent"]["model"], "qwen3-5")
         self.assertEqual(job["checkpoint"]["path"], "/models/checkpoint-a")
         self.assertEqual(job["task"]["name"], "omnidocbench_v1_6")
+        self.assertEqual(job["task"]["skill"], "omnidocbench_task")
         self.assertEqual(job["evaluation"]["skill"], "omnidocbench")
         self.assertEqual(job["outputs"]["report_dir"], str(report_dir.resolve()))
         self.assertEqual(runtime.state_path, report_dir.resolve() / "agent_state.json")
@@ -601,11 +654,23 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("httpx.Client(trust_env=False)", source)
         self.assertIn("http_client=", source)
 
-    def test_lmms_eval_old_skill_limits_default_batch_size(self):
+    def test_lmms_eval_old_skill_uses_batch_size_32(self):
         skill = Path("SKILLS/inference/lmms-eval-old/SKILL.md").read_text(encoding="utf-8")
 
-        self.assertIn("Default batch size for this skill is 4", skill)
-        self.assertIn('"4"', skill)
+        self.assertIn("Pass batch size `32` explicitly", skill)
+        self.assertIn('"32"', skill)
+        self.assertNotIn('"omnidocbench_v1_6" "4"', skill)
+
+    def test_omnidocbench_task_skill_documents_inference_then_evaluation_chain(self):
+        skill = Path("SKILLS/task/omnidocbench_task/SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("lmms-eval-old", skill)
+        self.assertIn("omnidocbench", skill)
+        self.assertIn("start_long_command", skill)
+        self.assertIn("wait_long_command", skill)
+        self.assertIn("extract_lmms_eval_samples", skill)
+        self.assertIn("extract_omnidocbench_metrics", skill)
+        self.assertLess(skill.index("extract_lmms_eval_samples"), skill.index("extract_omnidocbench_metrics"))
 
     def test_lmms_eval_old_script_checks_root_health_without_proxy(self):
         script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")

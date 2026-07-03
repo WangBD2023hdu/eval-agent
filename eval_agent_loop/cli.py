@@ -15,6 +15,7 @@ from .errors import AgentLoopError
 from .long_commands import cancel_active_long_commands
 from .progress import stderr_progress
 from .runner import run_loop
+from .skills import default_task_skill_name
 
 
 LOCAL_NO_PROXY_ENTRIES = ("localhost", "127.0.0.1", "127.0.1.1", "0.0.0.0", "::1")
@@ -40,6 +41,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--task", help="Evaluation task name")
     parser.add_argument("--report-dir", help="Directory where generated job, state, logs, and report artifacts should live; used as write root when --workspace is omitted")
     parser.add_argument("--run-id", help="Run identifier for generated jobs")
+    parser.add_argument("--task-skill", help="Task orchestration skill name for generated jobs")
     parser.add_argument("--inference-skill", default="lmms-eval-old", help="Inference skill name for generated jobs")
     parser.add_argument("--evaluation-skill", default="omnidocbench", help="Evaluation skill name for generated jobs")
     parser.add_argument("--worker-cuda-visible-devices", help="CUDA_VISIBLE_DEVICES for skill subprocesses, e.g. 0,1")
@@ -144,6 +146,7 @@ def prepare_runtime(args: argparse.Namespace) -> RuntimePaths:
 
 def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[str, object]:
     run_id = args.run_id or f"{args.task}-{time.strftime('%Y%m%d_%H%M%S', time.gmtime())}"
+    task_skill = args.task_skill or default_task_skill_name(args.task)
     return {
         "run_id": run_id,
         "agent": {
@@ -155,6 +158,7 @@ def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[
         },
         "task": {
             "name": args.task,
+            "skill": task_skill,
         },
         "inference": {
             "skill": args.inference_skill,
