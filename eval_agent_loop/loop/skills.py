@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .errors import AgentLoopError
+from ..core.errors import AgentLoopError
 
 
 REQUIRED_SKILLS = ("inference", "evaluation", "task")
@@ -12,30 +12,17 @@ TASK_SKILL_DEFAULTS = {
 }
 
 
-def load_skill_bundle(skills_dir: str | Path) -> dict[str, str]:
-    root = Path(skills_dir)
-    bundle: dict[str, str] = {}
-    for name in REQUIRED_SKILLS:
-        category_dir = root / name
-        skill_path = category_dir / "SKILL.md"
-        if not skill_path.exists():
-            raise AgentLoopError(f"missing required skill file: {skill_path}")
-        bundle[name] = skill_path.read_text(encoding="utf-8")
-        for nested_skill_path in sorted(category_dir.glob("*/SKILL.md")):
-            nested_name = nested_skill_path.parent.name
-            bundle[f"{name}/{nested_name}"] = nested_skill_path.read_text(encoding="utf-8")
-    return bundle
-
-
 def load_skill_context(skills_dir: str | Path, job: Any) -> dict[str, Any]:
     """Load only the skill documents needed by this job's task chain."""
     root = Path(skills_dir)
     selected: dict[str, str] = {}
+    skill_paths: dict[str, Path] = {}
     for name in REQUIRED_SKILLS:
         skill_path = root / name / "SKILL.md"
         if not skill_path.exists():
             raise AgentLoopError(f"missing required skill file: {skill_path}")
         selected[name] = skill_path.read_text(encoding="utf-8")
+        skill_paths[name] = skill_path
 
     for category, skill_name in _referenced_skill_names(job).items():
         if not skill_name:
@@ -45,8 +32,10 @@ def load_skill_context(skills_dir: str | Path, job: Any) -> dict[str, Any]:
         if not skill_path.exists():
             raise AgentLoopError(f"missing referenced skill file for {category}: {skill_path}")
         selected[key] = skill_path.read_text(encoding="utf-8")
+        skill_paths[key] = skill_path
 
     context = select_skill_context(selected, job)
+    _attach_skill_paths(context, skill_paths)
     context["available_skill_names"] = _discover_skill_names(root)
     return context
 
@@ -122,3 +111,17 @@ def _discover_skill_names(root: Path) -> list[str]:
         for nested_skill_path in sorted((root / category).glob("*/SKILL.md")):
             names.append(f"{category}/{nested_skill_path.parent.name}")
     return sorted(names)
+
+
+def _attach_skill_paths(context: dict[str, Any], skill_paths: dict[str, Path]) -> None:
+    for value in context.values():
+        if not isinstance(value, dict):
+            continue
+        name = value.get("name")
+        if not isinstance(name, str) or name not in skill_paths:
+            continue
+        skill_path = skill_paths[name].resolve()
+        skill_dir = skill_path.parent
+        value["path"] = str(skill_path)
+        value["skill_dir"] = str(skill_dir)
+        value["script_dir"] = str(skill_dir / "scripts")

@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ..core.errors import AgentLoopError
+from ..core.progress import Progress
+from ..loop.messages import parse_tool_call
 from .actions import execute_action
-from .errors import AgentLoopError
-from .messages import parse_tool_call
-from .progress import Progress
 
 
 TERMINAL_ACTIONS = {"finish", "ask_user"}

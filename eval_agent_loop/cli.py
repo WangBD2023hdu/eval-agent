@@ -9,13 +9,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .client import OpenAIChatClient
-from .config import AgentConfig
-from .errors import AgentLoopError
-from .long_commands import cancel_active_long_commands
-from .progress import stderr_progress
-from .runner import run_loop
-from .skills import default_task_skill_name
+from .core.client import OpenAIChatClient
+from .core.config import AgentConfig
+from .core.errors import AgentLoopError
+from .core.progress import stderr_progress
+from .loop.runner import run_loop
+from .loop.skills import default_task_skill_name
+from .tools.long_commands.manager import cancel_active_long_commands
 
 
 LOCAL_NO_PROXY_ENTRIES = ("localhost", "127.0.0.1", "127.0.1.1", "0.0.0.0", "::1")

@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .path_policy import resolve_write_path
+from ..core.path_policy import resolve_write_path
 
 
 def read_file(action: dict[str, Any]) -> dict[str, Any]:

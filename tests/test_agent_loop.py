@@ -8,8 +8,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import agent_loop
 from eval_agent_loop import cli as agent_cli
+from eval_agent_loop.core.client import AssistantTurn
+from eval_agent_loop.core.config import AgentConfig
+from eval_agent_loop.core.errors import AgentLoopError
+from eval_agent_loop.loop.messages import build_messages
+from eval_agent_loop.loop.runner import run_loop
+from eval_agent_loop.loop.skills import load_skill_context, select_skill_context
+from eval_agent_loop.tools.actions import execute_action, parse_model_action, validate_action
+from eval_agent_loop.tools.definitions import build_tools
+from eval_agent_loop.tools.long_commands.manager import cancel_active_long_commands
 
 
 class ToolCall:
@@ -32,83 +40,88 @@ class ScriptedToolClient:
 
 
 class AgentLoopContractTests(unittest.TestCase):
-    def test_agent_loop_is_thin_facade_over_package_modules(self):
+    def test_agent_loop_package_uses_only_canonical_modules(self):
         for module_name in (
-            "eval_agent_loop.actions",
-            "eval_agent_loop.client",
-            "eval_agent_loop.command_tools",
-            "eval_agent_loop.config",
-            "eval_agent_loop.file_tools",
-            "eval_agent_loop.long_command_supervisor",
-            "eval_agent_loop.long_commands",
-            "eval_agent_loop.lmms",
-            "eval_agent_loop.messages",
-            "eval_agent_loop.omnidocbench",
-            "eval_agent_loop.path_policy",
-            "eval_agent_loop.progress",
-            "eval_agent_loop.runner",
-            "eval_agent_loop.skills",
-            "eval_agent_loop.state",
-            "eval_agent_loop.tool_execution",
-            "eval_agent_loop.tool_defs",
+            "eval_agent_loop.core.config",
+            "eval_agent_loop.core.errors",
+            "eval_agent_loop.core.path_policy",
+            "eval_agent_loop.core.progress",
+            "eval_agent_loop.core.state",
+            "eval_agent_loop.loop.messages",
+            "eval_agent_loop.loop.runner",
+            "eval_agent_loop.loop.skills",
+            "eval_agent_loop.tools.actions",
+            "eval_agent_loop.tools.command",
+            "eval_agent_loop.tools.definitions",
+            "eval_agent_loop.tools.execution",
+            "eval_agent_loop.tools.files",
+            "eval_agent_loop.tools.long_commands.manager",
+            "eval_agent_loop.tools.long_commands.metadata",
+            "eval_agent_loop.tools.long_commands.paths",
+            "eval_agent_loop.tools.long_commands.supervisor",
         ):
             importlib.import_module(module_name)
 
-        source_lines = Path("agent_loop.py").read_text(encoding="utf-8").splitlines()
-        self.assertLessEqual(len(source_lines), 80)
+        legacy_paths = [
+            "agent_loop.py",
+            "eval_agent_loop/actions.py",
+            "eval_agent_loop/client.py",
+            "eval_agent_loop/command_tools.py",
+            "eval_agent_loop/config.py",
+            "eval_agent_loop/errors.py",
+            "eval_agent_loop/file_tools.py",
+            "eval_agent_loop/long_command_supervisor.py",
+            "eval_agent_loop/long_commands.py",
+            "eval_agent_loop/messages.py",
+            "eval_agent_loop/path_policy.py",
+            "eval_agent_loop/progress.py",
+            "eval_agent_loop/runner.py",
+            "eval_agent_loop/skills.py",
+            "eval_agent_loop/state.py",
+            "eval_agent_loop/tool_defs.py",
+            "eval_agent_loop/tool_execution.py",
+            "eval_agent_loop/lmms.py",
+            "eval_agent_loop/omnidocbench.py",
+        ]
+        existing = [path for path in legacy_paths if Path(path).exists()]
+        self.assertEqual(existing, [])
+
+    def test_agent_tool_layer_has_no_task_specific_logic(self):
+        forbidden_terms = ("lmms", "omnidocbench")
+        for path in Path("eval_agent_loop/tools").rglob("*.py"):
+            text = path.read_text(encoding="utf-8").lower()
+            for term in forbidden_terms:
+                self.assertNotIn(term, text, f"{term} should stay in skill scripts, not {path}")
+
+    def test_bin_eval_agent_imports_package_cli_directly(self):
+        script = Path("bin/eval-agent").read_text(encoding="utf-8")
+
+        self.assertIn("from eval_agent_loop.cli import entrypoint", script)
+        self.assertNotIn("from agent_loop import", script)
 
     def test_parse_model_action_accepts_plain_json(self):
-        action = agent_loop.parse_model_action('{"action":"finish","message":"done"}')
+        action = parse_model_action('{"action":"finish","message":"done"}')
         self.assertEqual(action["action"], "finish")
         self.assertEqual(action["message"], "done")
 
     def test_parse_model_action_accepts_json_fence(self):
-        action = agent_loop.parse_model_action(
+        action = parse_model_action(
             '```json\n{"action":"ask_user","message":"need config"}\n```'
         )
         self.assertEqual(action["action"], "ask_user")
 
     def test_validate_action_rejects_simulation(self):
-        with self.assertRaises(agent_loop.AgentLoopError):
-            agent_loop.validate_action({"action": "simulate", "message": "fake result"})
+        with self.assertRaises(AgentLoopError):
+            validate_action({"action": "simulate", "message": "fake result"})
 
     def test_validate_run_command_requires_argv_list(self):
-        with self.assertRaises(agent_loop.AgentLoopError):
-            agent_loop.validate_action({"action": "run_command", "cmd": "echo unsafe"})
+        with self.assertRaises(AgentLoopError):
+            validate_action({"action": "run_command", "cmd": "echo unsafe"})
 
     def test_agent_config_requires_real_base_url(self):
         env = {"AGENT_MODEL": "qwen3-5", "AGENT_API_KEY": "EMPTY"}
-        with self.assertRaises(agent_loop.AgentLoopError):
-            agent_loop.AgentConfig.from_env(env)
-
-    def test_load_skill_bundle_requires_three_skill_docs(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "SKILLS"
-            for name in ("inference", "evaluation", "task"):
-                skill_dir = root / name
-                skill_dir.mkdir(parents=True)
-                (skill_dir / "SKILL.md").write_text(f"# {name}\nreal instructions\n", encoding="utf-8")
-
-            bundle = agent_loop.load_skill_bundle(root)
-
-        self.assertEqual(set(bundle), {"inference", "evaluation", "task"})
-        self.assertIn("real instructions", bundle["inference"])
-
-    def test_load_skill_bundle_includes_nested_category_skills(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "SKILLS"
-            for name in ("inference", "evaluation", "task"):
-                skill_dir = root / name
-                skill_dir.mkdir(parents=True)
-                (skill_dir / "SKILL.md").write_text(f"# {name}\nreal instructions\n", encoding="utf-8")
-            nested = root / "inference" / "lmms-eval-old"
-            nested.mkdir()
-            (nested / "SKILL.md").write_text("# lmms-eval-old\nrun old lmms eval\n", encoding="utf-8")
-
-            bundle = agent_loop.load_skill_bundle(root)
-
-        self.assertIn("inference/lmms-eval-old", bundle)
-        self.assertIn("run old lmms eval", bundle["inference/lmms-eval-old"])
+        with self.assertRaises(AgentLoopError):
+            AgentConfig.from_env(env)
 
     def test_select_skill_context_keeps_only_task_chain_skill_docs(self):
         skills = {
@@ -130,8 +143,8 @@ class AgentLoopContractTests(unittest.TestCase):
         }
         state = {"status": "running"}
 
-        skill_context = agent_loop.select_skill_context(skills, job)
-        messages = agent_loop.build_messages(skill_context=skill_context, job=job, state=state, events=[])
+        skill_context = select_skill_context(skills, job)
+        messages = build_messages(skill_context=skill_context, job=job, state=state, events=[])
         joined = "\n".join(message["content"] for message in messages)
         payload = json.loads(messages[1]["content"])
 
@@ -166,7 +179,7 @@ class AgentLoopContractTests(unittest.TestCase):
                 unused_dir.mkdir()
                 (unused_dir / "SKILL.md").write_text(f"# {unused}\nUNUSED_SKILL_CONTENT\n", encoding="utf-8")
 
-            context = agent_loop.load_skill_context(
+            context = load_skill_context(
                 root,
                 {
                     "task": {"name": "omnidocbench_v1_6", "skill": "omnidocbench_task"},
@@ -183,67 +196,91 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertNotIn("UNUSED_SKILL_CONTENT", joined)
 
     def test_agent_tools_expose_command_line_tool(self):
-        tools = agent_loop.build_tools()
+        tools = build_tools()
         names = [tool["function"]["name"] for tool in tools]
 
         self.assertIn("run_command", names)
         self.assertIn("start_long_command", names)
         self.assertIn("wait_long_command", names)
         self.assertIn("inspect_long_command", names)
-        self.assertIn("extract_lmms_eval_samples", names)
-        self.assertIn("extract_omnidocbench_metrics", names)
         self.assertIn("finish", names)
+        self.assertNotIn("extract_lmms_eval_samples", names)
+        self.assertNotIn("extract_omnidocbench_metrics", names)
         run_command = next(tool for tool in tools if tool["function"]["name"] == "run_command")
         self.assertIn("argv", run_command["function"]["parameters"]["required"])
         start_long_command = next(tool for tool in tools if tool["function"]["name"] == "start_long_command")
         self.assertIn("argv", start_long_command["function"]["parameters"]["required"])
 
-    def test_extract_lmms_eval_samples_from_ansi_log(self):
+    def test_lmms_eval_old_skill_script_extracts_samples_from_ansi_log(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             sample_path = root / "logs/qwen3_5_vllm/omnidocbench_v1_6/20260629_204704_samples_omnidocbench_v1_6.jsonl"
             sample_path.parent.mkdir(parents=True)
             sample_path.write_text('{"sample_id":"1"}\n', encoding="utf-8")
-            log_text = (
+            log_path = root / "output.log"
+            log_path.write_text(
                 "\x1b[32m2026-06-29 22:16:43.325\x1b[0m | INFO | "
                 "\x1b[1mResults saved in logs/qwen3_5_vllm/omnidocbench_v1_6/"
                 "20260629_204704_samples_omnidocbench_v1_6.jsonl\x1b[0m\n"
                 ">>> Evaluation complete. Logs saved to: ./logs/qwen3_5_vllm/omnidocbench_v1_6\n"
+                ,
+                encoding="utf-8",
             )
 
-            result = agent_loop.execute_action(
-                {
-                    "action": "extract_lmms_eval_samples",
-                    "text": log_text,
-                    "cwd": str(root),
-                    "task": "omnidocbench_v1_6",
-                },
-                workspace=root,
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/inference/lmms-eval-old/scripts/extract_samples.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                    "--task",
+                    "omnidocbench_v1_6",
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
             )
+            result = json.loads(completed.stdout)
 
         self.assertEqual(result["samples_jsonl"], "logs/qwen3_5_vllm/omnidocbench_v1_6/20260629_204704_samples_omnidocbench_v1_6.jsonl")
         self.assertEqual(result["samples_jsonl_abs"], str(sample_path.resolve()))
         self.assertEqual(result["next_skill_input"]["prediction_jsonl"], str(sample_path.resolve()))
         self.assertEqual(result["next_skill_input"]["task"], "omnidocbench_v1_6")
 
-    def test_extract_lmms_eval_samples_fails_when_artifact_missing(self):
+    def test_lmms_eval_old_skill_script_fails_when_artifact_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            with self.assertRaises(agent_loop.AgentLoopError):
-                agent_loop.execute_action(
-                    {
-                        "action": "extract_lmms_eval_samples",
-                        "text": "Results saved in logs/qwen3_5_vllm/omnidocbench_v1_6/missing_samples_omnidocbench_v1_6.jsonl",
-                        "cwd": str(root),
-                    },
-                    workspace=root,
-                )
+            log_path = root / "output.log"
+            log_path.write_text(
+                "Results saved in logs/qwen3_5_vllm/omnidocbench_v1_6/missing_samples_omnidocbench_v1_6.jsonl",
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/inference/lmms-eval-old/scripts/extract_samples.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
 
-    def test_extract_omnidocbench_metrics_writes_markdown_report_section(self):
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("does not exist", completed.stderr)
+
+    def test_omnidocbench_skill_script_extracts_metrics_and_writes_markdown_report_section(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             report_path = root / "report.md"
-            log_text = """
+            log_path = root / "output.log"
+            log_path.write_text(
+                """
 ========== END_FINAL_EVAL_RUN_REPORT 20260702_140820_samples_omnidocbench_v1_6_quick_match ==========
 [notebook_metric_summary]
   text_block_Edit_dist: 0.09570624547098938
@@ -257,17 +294,28 @@ class AgentLoopContractTests(unittest.TestCase):
 [runtime-environment-log] saved to ./result/20260702_140820_samples_omnidocbench_v1_6_quick_match_runtime_environment.log
 [stage-execution-json] saved to ./result/20260702_140820_samples_omnidocbench_v1_6_quick_match_stage_execution.json
 [stage-execution-log] saved to ./result/20260702_140820_samples_omnidocbench_v1_6_quick_match_stage_execution.log
-"""
-
-            result = agent_loop.execute_action(
-                {
-                    "action": "extract_omnidocbench_metrics",
-                    "text": log_text,
-                    "cwd": str(root),
-                    "markdown_path": str(report_path),
-                },
-                workspace=root,
+""",
+                encoding="utf-8",
             )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/evaluation/omnidocbench/scripts/extract_metrics.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                    "--markdown-path",
+                    str(report_path),
+                    "--workspace",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            result = json.loads(completed.stdout)
 
             markdown = report_path.read_text(encoding="utf-8")
 
@@ -278,18 +326,27 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("| text_block_Edit_dist | 0.09570624547098938 |", markdown)
         self.assertTrue(result["report_files"]["final-eval-run-report"].endswith("_run_summary.json"))
 
-    def test_extract_omnidocbench_metrics_fails_without_summary_block(self):
+    def test_omnidocbench_skill_script_fails_without_summary_block(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            with self.assertRaises(agent_loop.AgentLoopError):
-                agent_loop.execute_action(
-                    {
-                        "action": "extract_omnidocbench_metrics",
-                        "text": "no metrics here",
-                        "cwd": str(root),
-                    },
-                    workspace=root,
-                )
+            log_path = root / "output.log"
+            log_path.write_text("no metrics here", encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/evaluation/omnidocbench/scripts/extract_metrics.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("notebook_metric_summary", completed.stderr)
 
     def test_write_tools_are_restricted_to_workspace(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -297,7 +354,7 @@ class AgentLoopContractTests(unittest.TestCase):
             outside = Path(tmp) / "outside.txt"
             root.mkdir()
 
-            ok = agent_loop.execute_action(
+            ok = execute_action(
                 {
                     "action": "write_file",
                     "path": str(root / "report.md"),
@@ -306,8 +363,8 @@ class AgentLoopContractTests(unittest.TestCase):
                 workspace=root,
             )
 
-            with self.assertRaises(agent_loop.AgentLoopError):
-                agent_loop.execute_action(
+            with self.assertRaises(AgentLoopError):
+                execute_action(
                     {
                         "action": "write_file",
                         "path": str(outside),
@@ -324,8 +381,8 @@ class AgentLoopContractTests(unittest.TestCase):
             outside = Path(tmp) / "outside-commands"
             root.mkdir()
 
-            with self.assertRaises(agent_loop.AgentLoopError):
-                agent_loop.execute_action(
+            with self.assertRaises(AgentLoopError):
+                execute_action(
                     {
                         "action": "start_long_command",
                         "argv": [sys.executable, "-c", "print('should-not-run')"],
@@ -342,7 +399,9 @@ class AgentLoopContractTests(unittest.TestCase):
             root = Path(tmp) / "allowed"
             outside = Path(tmp) / "report.md"
             root.mkdir()
-            log_text = """
+            log_path = root / "output.log"
+            log_path.write_text(
+                """
 [notebook_metric_summary]
   text_block_Edit_dist: 0.1
   display_formula_CDM: 90
@@ -350,25 +409,36 @@ class AgentLoopContractTests(unittest.TestCase):
   table_TEDS_structure_only: 72
   reading_order_Edit_dist: 0.2
   overall_notebook: 83
-"""
+""",
+                encoding="utf-8",
+            )
 
-            with self.assertRaises(agent_loop.AgentLoopError):
-                agent_loop.execute_action(
-                    {
-                        "action": "extract_omnidocbench_metrics",
-                        "text": log_text,
-                        "cwd": str(root),
-                        "markdown_path": str(outside),
-                    },
-                    workspace=root,
-                )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/evaluation/omnidocbench/scripts/extract_metrics.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                    "--markdown-path",
+                    str(outside),
+                    "--workspace",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
 
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("outside workspace", completed.stderr)
         self.assertFalse(outside.exists())
 
     def test_long_command_tools_support_generic_evaluation_success(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            start = agent_loop.execute_action(
+            start = execute_action(
                 {
                     "action": "start_long_command",
                     "argv": [sys.executable, "-c", "import time; time.sleep(0.2); print('metric-ready')"],
@@ -378,7 +448,7 @@ class AgentLoopContractTests(unittest.TestCase):
                 },
                 workspace=root,
             )
-            result = agent_loop.execute_action(
+            result = execute_action(
                 {
                     "action": "wait_long_command",
                     "command_id": start["command_id"],
@@ -398,7 +468,7 @@ class AgentLoopContractTests(unittest.TestCase):
     def test_long_command_tools_report_failed_evaluation_process(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            start = agent_loop.execute_action(
+            start = execute_action(
                 {
                     "action": "start_long_command",
                     "argv": [
@@ -412,7 +482,7 @@ class AgentLoopContractTests(unittest.TestCase):
                 },
                 workspace=root,
             )
-            result = agent_loop.execute_action(
+            result = execute_action(
                 {
                     "action": "wait_long_command",
                     "command_id": start["command_id"],
@@ -432,9 +502,9 @@ class AgentLoopContractTests(unittest.TestCase):
             starter = (
                 "import json, pathlib, sys\n"
                 "sys.path.insert(0, sys.argv[1])\n"
-                "import agent_loop\n"
+                "from eval_agent_loop.tools.actions import execute_action\n"
                 "workspace = pathlib.Path(sys.argv[2])\n"
-                "result = agent_loop.execute_action({\n"
+                "result = execute_action({\n"
                 "    'action': 'start_long_command',\n"
                 "    'argv': [sys.executable, '-c', \"import time; time.sleep(0.2); print('recoverable-done')\"],\n"
                 "    'cwd': str(workspace),\n"
@@ -451,7 +521,7 @@ class AgentLoopContractTests(unittest.TestCase):
             )
             start = json.loads(completed.stdout)
 
-            result = agent_loop.execute_action(
+            result = execute_action(
                 {
                     "action": "wait_long_command",
                     "command_id": start["command_id"],
@@ -469,7 +539,7 @@ class AgentLoopContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             progress_events = []
-            start = agent_loop.execute_action(
+            start = execute_action(
                 {
                     "action": "start_long_command",
                     "argv": [sys.executable, "-c", "import time; time.sleep(0.3); print('done')"],
@@ -480,7 +550,7 @@ class AgentLoopContractTests(unittest.TestCase):
                 workspace=root,
             )
 
-            result = agent_loop.execute_action(
+            result = execute_action(
                 {
                     "action": "wait_long_command",
                     "command_id": start["command_id"],
@@ -496,10 +566,37 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("long_command_wait", joined)
         self.assertIn(start["command_id"], joined)
 
+    def test_wait_long_command_returns_only_last_20_log_lines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = "for i in range(30): print(f'line-{i:02d}')"
+            start = execute_action(
+                {
+                    "action": "start_long_command",
+                    "argv": [sys.executable, "-c", script],
+                    "cwd": str(root),
+                    "skill_type": "inference",
+                    "label": "tail-lines",
+                },
+                workspace=root,
+            )
+
+            result = execute_action(
+                {
+                    "action": "wait_long_command",
+                    "command_id": start["command_id"],
+                    "timeout_sec": 5,
+                },
+                workspace=root,
+            )
+
+        lines = result["log_tail"].splitlines()
+        self.assertEqual(lines, [f"line-{i:02d}" for i in range(10, 30)])
+
     def test_cancel_active_long_commands_terminates_running_process_group(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            start = agent_loop.execute_action(
+            start = execute_action(
                 {
                     "action": "start_long_command",
                     "argv": [sys.executable, "-c", "import time; time.sleep(30)"],
@@ -510,8 +607,8 @@ class AgentLoopContractTests(unittest.TestCase):
                 workspace=root,
             )
 
-            cancelled = agent_loop.cancel_active_long_commands(grace_sec=0.2)
-            result = agent_loop.execute_action(
+            cancelled = cancel_active_long_commands(grace_sec=0.2)
+            result = execute_action(
                 {
                     "action": "inspect_long_command",
                     "command_id": start["command_id"],
@@ -573,7 +670,7 @@ class AgentLoopContractTests(unittest.TestCase):
                 ]
             )
 
-            with self.assertRaisesRegex(agent_loop.AgentLoopError, "port 8000"):
+            with self.assertRaisesRegex(AgentLoopError, "port 8000"):
                 agent_cli.prepare_runtime(args)
 
     def test_cli_records_worker_cuda_visible_devices_in_generated_job(self):
@@ -648,7 +745,7 @@ class AgentLoopContractTests(unittest.TestCase):
             self.assertEqual(env[key].count("127.0.0.1"), 1)
 
     def test_agent_openai_client_does_not_use_environment_proxies(self):
-        source = Path("eval_agent_loop/client.py").read_text(encoding="utf-8")
+        source = Path("eval_agent_loop/core/client.py").read_text(encoding="utf-8")
 
         self.assertIn("import httpx", source)
         self.assertIn("httpx.Client(trust_env=False)", source)
@@ -668,9 +765,11 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIn("omnidocbench", skill)
         self.assertIn("start_long_command", skill)
         self.assertIn("wait_long_command", skill)
-        self.assertIn("extract_lmms_eval_samples", skill)
-        self.assertIn("extract_omnidocbench_metrics", skill)
-        self.assertLess(skill.index("extract_lmms_eval_samples"), skill.index("extract_omnidocbench_metrics"))
+        self.assertIn("scripts/extract_samples.py", skill)
+        self.assertIn("scripts/extract_metrics.py", skill)
+        self.assertNotIn("extract_lmms_eval_samples", skill)
+        self.assertNotIn("extract_omnidocbench_metrics", skill)
+        self.assertLess(skill.index("scripts/extract_samples.py"), skill.index("scripts/extract_metrics.py"))
 
     def test_lmms_eval_old_script_checks_root_health_without_proxy(self):
         script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")
@@ -707,7 +806,7 @@ class AgentLoopContractTests(unittest.TestCase):
 
             client = ScriptedToolClient(
                 [
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall(
@@ -717,7 +816,7 @@ class AgentLoopContractTests(unittest.TestCase):
                             )
                         ],
                     ),
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall("call_2", "finish", {"message": "finished after tool"})
@@ -726,9 +825,9 @@ class AgentLoopContractTests(unittest.TestCase):
                 ]
             )
 
-            result = agent_loop.run_loop(
+            result = run_loop(
                 client=client,
-                config=agent_loop.AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
+                config=AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
                 skills_dir=skills_dir,
                 job_path=job_path,
                 state_path=state_path,
@@ -756,7 +855,7 @@ class AgentLoopContractTests(unittest.TestCase):
 
             client = ScriptedToolClient(
                 [
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall(
@@ -766,7 +865,7 @@ class AgentLoopContractTests(unittest.TestCase):
                             )
                         ],
                     ),
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall("call_2", "finish", {"message": "done"})
@@ -775,9 +874,9 @@ class AgentLoopContractTests(unittest.TestCase):
                 ]
             )
 
-            result = agent_loop.run_loop(
+            result = run_loop(
                 client=client,
-                config=agent_loop.AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
+                config=AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
                 skills_dir=skills_dir,
                 job_path=job_path,
                 state_path=state_path,
@@ -823,7 +922,7 @@ class AgentLoopContractTests(unittest.TestCase):
 
             client = ScriptedToolClient(
                 [
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall(
@@ -846,7 +945,7 @@ class AgentLoopContractTests(unittest.TestCase):
                             ),
                         ],
                     ),
-                    agent_loop.AssistantTurn(
+                    AssistantTurn(
                         content=None,
                         tool_calls=[
                             ToolCall("call_3", "finish", {"message": "finished after parallel tools"})
@@ -855,9 +954,9 @@ class AgentLoopContractTests(unittest.TestCase):
                 ]
             )
 
-            result = agent_loop.run_loop(
+            result = run_loop(
                 client=client,
-                config=agent_loop.AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
+                config=AgentConfig(base_url="http://example.test/v1", api_key="EMPTY", max_iterations=5),
                 skills_dir=skills_dir,
                 job_path=job_path,
                 state_path=state_path,

@@ -71,18 +71,34 @@ If the command exits non-zero, is killed, or times out, report the real `status`
 
 ## Metric Extraction
 
-On successful completion, parse metrics from the real benchmark output using `extract_omnidocbench_metrics`.
+On successful completion, parse metrics from the real benchmark output using this skill's own script with the generic `run_command` tool. The script path is:
+
+```text
+<skill_context.referenced_evaluation_skill.script_dir>/extract_metrics.py
+```
+
+Call it with the benchmark log path:
 
 ```json
 {
-  "action": "extract_omnidocbench_metrics",
-  "log_path": "<log_path from wait_long_command>",
+  "action": "run_command",
   "cwd": "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench",
-  "markdown_path": "<report_path>"
+  "argv": [
+    "python3",
+    "<skill_context.referenced_evaluation_skill.script_dir>/extract_metrics.py",
+    "--log-path",
+    "<log_path from wait_long_command>",
+    "--cwd",
+    "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench",
+    "--markdown-path",
+    "<report_path>",
+    "--workspace",
+    "<job.outputs.root>"
+  ]
 }
 ```
 
-The tool extracts this required metric set:
+The script prints JSON to stdout and writes the Markdown report under the workspace. It extracts this required metric set:
 
 ```text
 text_block_Edit_dist
@@ -109,7 +125,7 @@ Evaluation is complete only when all are true:
 
 - `wait_long_command.status` is `succeeded`
 - `wait_long_command.returncode` is `0`
-- `extract_omnidocbench_metrics` returns all six required metrics
+- `scripts/extract_metrics.py` returns all six required metrics
 - the Markdown report contains the OmniDocBench metric table
 
 Return the structured metrics and Markdown report path to the task skill. Include `overall_notebook` in the final summary.

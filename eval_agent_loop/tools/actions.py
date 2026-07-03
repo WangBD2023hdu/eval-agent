@@ -5,14 +5,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .command_tools import run_command
-from .errors import AgentLoopError
-from .file_tools import append_event, read_file, write_or_append
-from .long_commands import inspect_long_command, start_long_command, wait_long_command
-from .lmms import extract_lmms_eval_samples
-from .omnidocbench import extract_omnidocbench_metrics
-from .progress import Progress
-from .tool_defs import ALLOWED_ACTIONS, FORBIDDEN_ACTION_WORDS
+from ..core.errors import AgentLoopError
+from ..core.progress import Progress
+from .command import run_command
+from .definitions import ALLOWED_ACTIONS, FORBIDDEN_ACTION_WORDS
+from .files import append_event, read_file, write_or_append
+from .long_commands.manager import inspect_long_command, start_long_command, wait_long_command
 
 
 def parse_model_action(content: str) -> dict[str, Any]:
@@ -52,10 +50,6 @@ def validate_action(action: dict[str, Any]) -> None:
         raise AgentLoopError(f"{lowered} requires string content")
     if lowered == "append_event":
         _validate_append_event(action)
-    if lowered == "extract_lmms_eval_samples":
-        _validate_extract_lmms_eval_samples(action)
-    if lowered == "extract_omnidocbench_metrics":
-        _validate_extract_omnidocbench_metrics(action)
     if lowered in {"finish", "ask_user"} and not isinstance(action.get("message"), str):
         raise AgentLoopError(f"{lowered} requires message")
 
@@ -78,10 +72,6 @@ def execute_action(action: dict[str, Any], *, workspace: Path, progress: Progres
         return write_or_append(action, append=True, workspace=workspace)
     if name == "append_event":
         return append_event(action, workspace=workspace)
-    if name == "extract_lmms_eval_samples":
-        return extract_lmms_eval_samples(action, workspace=workspace)
-    if name == "extract_omnidocbench_metrics":
-        return extract_omnidocbench_metrics(action, workspace=workspace)
     if name in {"finish", "ask_user"}:
         return {"action": name, "message": action["message"]}
     raise AgentLoopError(f"unreachable action: {name}")
@@ -132,32 +122,6 @@ def _validate_append_event(action: dict[str, Any]) -> None:
     if not isinstance(event, dict):
         raise AgentLoopError("append_event requires event object")
     _require_string(action, "path", "append_event")
-
-
-def _validate_extract_lmms_eval_samples(action: dict[str, Any]) -> None:
-    text = action.get("text")
-    log_path = action.get("log_path")
-    if not isinstance(text, str) and not isinstance(log_path, str):
-        raise AgentLoopError("extract_lmms_eval_samples requires text or log_path")
-    for key in ("cwd", "task"):
-        if action.get(key) is not None and not isinstance(action.get(key), str):
-            raise AgentLoopError(f"extract_lmms_eval_samples.{key} must be a string")
-    require_exists = action.get("require_exists", True)
-    if not isinstance(require_exists, bool):
-        raise AgentLoopError("extract_lmms_eval_samples.require_exists must be a boolean")
-
-
-def _validate_extract_omnidocbench_metrics(action: dict[str, Any]) -> None:
-    text = action.get("text")
-    log_path = action.get("log_path")
-    if not isinstance(text, str) and not isinstance(log_path, str):
-        raise AgentLoopError("extract_omnidocbench_metrics requires text or log_path")
-    for key in ("cwd", "markdown_path"):
-        if action.get(key) is not None and not isinstance(action.get(key), str):
-            raise AgentLoopError(f"extract_omnidocbench_metrics.{key} must be a string")
-    append = action.get("append", True)
-    if not isinstance(append, bool):
-        raise AgentLoopError("extract_omnidocbench_metrics.append must be a boolean")
 
 
 def _require_string(action: dict[str, Any], key: str, action_name: str) -> None:

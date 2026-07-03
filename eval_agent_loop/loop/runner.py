@@ -5,16 +5,16 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .actions import execute_action, parse_model_action
-from .client import OpenAIChatClient
-from .config import AgentConfig
-from .errors import AgentLoopError
+from ..core.client import OpenAIChatClient
+from ..core.config import AgentConfig
+from ..core.errors import AgentLoopError
+from ..core.progress import Progress, emit
+from ..core.state import load_structured_file, read_state, write_state
+from ..tools.actions import execute_action, parse_model_action
+from ..tools.definitions import build_tools
+from ..tools.execution import execute_tool_call_batch
 from .messages import build_messages, tool_call_to_message
-from .progress import Progress, emit
 from .skills import load_skill_context
-from .state import load_structured_file, read_state, write_state
-from .tool_execution import execute_tool_call_batch
-from .tool_defs import build_tools
 
 
 def run_loop(

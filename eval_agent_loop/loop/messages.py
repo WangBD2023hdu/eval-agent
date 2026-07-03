@@ -3,14 +3,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .actions import validate_action
-from .errors import AgentLoopError
+from ..core.errors import AgentLoopError
+from ..tools.actions import validate_action
 
 
 def build_messages(
     *,
-    skill_context: dict[str, Any] | None = None,
-    skills: dict[str, str] | None = None,
+    skill_context: dict[str, Any],
     job: Any,
     state: dict[str, Any],
     events: list[dict[str, Any]],
@@ -20,6 +19,7 @@ def build_messages(
 The skill_context was loaded on demand for this job.
 When skill_context.active_task_skill exists, use it as the entry point and follow its sequence before using referenced inference or evaluation skills.
 Use only the referenced inference/evaluation skills in skill_context for this job unless the active task skill or user explicitly asks for another skill.
+Task-specific parsing and report extraction must be done by scripts under the relevant skill's script_dir via run_command, not by agent-native tools.
 Do not simulate, fake, mock, or invent inference outputs, benchmark metrics, files, logs, or command results.
 Use the provided tools. Do not describe a tool call in prose when you can call the tool.
 Use run_command only for real commands. Use read_file only for real files.
@@ -30,10 +30,6 @@ Tool calls returned in the same assistant turn are executed concurrently; only b
 Put dependent calls, GPU-contending calls, and terminal finish/ask_user calls in separate turns.
 If a required value is missing, call ask_user. When the job is complete, call finish.
 """
-    if skill_context is None:
-        if skills is None:
-            raise AgentLoopError("build_messages requires skill_context")
-        skill_context = {"legacy_skills": skills}
     payload = {
         "skill_context": skill_context,
         "job": job,

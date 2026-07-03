@@ -12,8 +12,6 @@ ALLOWED_ACTIONS = {
     "write_file",
     "append_file",
     "append_event",
-    "extract_lmms_eval_samples",
-    "extract_omnidocbench_metrics",
     "finish",
     "ask_user",
 }
@@ -158,42 +156,6 @@ def build_tools() -> list[dict[str, Any]]:
                         "event": {"type": "object"},
                     },
                     "required": ["path", "event"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "extract_lmms_eval_samples",
-                "description": "Extract the real LMMS Eval per-sample JSONL artifact path from stdout/stderr text or a log file.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "text": {"type": "string"},
-                        "log_path": {"type": "string"},
-                        "cwd": {"type": "string"},
-                        "task": {"type": "string"},
-                        "require_exists": {"type": "boolean"},
-                    },
-                    "additionalProperties": False,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "extract_omnidocbench_metrics",
-                "description": "Extract real OmniDocBench notebook metrics and saved report paths from benchmark output or a log file, optionally writing a Markdown section.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "text": {"type": "string"},
-                        "log_path": {"type": "string"},
-                        "cwd": {"type": "string"},
-                        "markdown_path": {"type": "string"},
-                        "append": {"type": "boolean"},
-                    },
                     "additionalProperties": False,
                 },
             },

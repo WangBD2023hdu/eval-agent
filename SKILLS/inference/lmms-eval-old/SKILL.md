@@ -86,19 +86,32 @@ After the command exits, extract the per-sample JSONL path from the real stdout/
 Results saved in logs/qwen3_5_vllm/omnidocbench_v1_6/20260629_204704_samples_omnidocbench_v1_6.jsonl
 ```
 
-Use the `extract_lmms_eval_samples` tool with the command output or log path:
+Use this skill's own script with the generic `run_command` tool. The script path is:
+
+```text
+<skill_context.referenced_inference_skill.script_dir>/extract_samples.py
+```
+
+Call it with the command log path:
 
 ```json
 {
-  "action": "extract_lmms_eval_samples",
-  "log_path": "<log_path from wait_long_command>",
+  "action": "run_command",
   "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
-  "task": "<task>",
-  "require_exists": true
+  "argv": [
+    "python3",
+    "<skill_context.referenced_inference_skill.script_dir>/extract_samples.py",
+    "--log-path",
+    "<log_path from wait_long_command>",
+    "--cwd",
+    "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+    "--task",
+    "<task>"
+  ]
 }
 ```
 
-This tool returns:
+The script prints JSON to stdout:
 
 ```json
 {
@@ -112,6 +125,6 @@ This tool returns:
 }
 ```
 
-Pass `next_skill_input.prediction_jsonl` to the downstream evaluation skill. Do not proceed to evaluation if `extract_lmms_eval_samples` cannot find the path or the JSONL file does not exist.
+Pass `next_skill_input.prediction_jsonl` to the downstream evaluation skill. Do not proceed to evaluation if `scripts/extract_samples.py` cannot find the path or the JSONL file does not exist.
 
 If the command runs longer than the interactive session can wait, preserve the returned `command_id`, `metadata_path`, `log_path`, cwd, task, and model weight. A later loop must use `inspect_long_command` before deciding whether to continue waiting, extract artifacts, or report failure.

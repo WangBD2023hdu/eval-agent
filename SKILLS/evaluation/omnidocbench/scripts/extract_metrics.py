@@ -1,14 +1,14 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import json
 import re
+import sys
 from pathlib import Path
-from typing import Any
-
-from .errors import AgentLoopError
-from .lmms import ANSI_ESCAPE_RE
-from .path_policy import resolve_write_path
 
 
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 EXPECTED_METRICS = (
     "text_block_Edit_dist",
     "display_formula_CDM",
@@ -22,28 +22,58 @@ SAVED_FILE_RE = re.compile(r"^\[([^\]]+)\]\s+saved to\s+(.+?)\s*$", re.MULTILINE
 METRIC_RE = re.compile(r"^\s*([A-Za-z0-9_]+):\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*$", re.MULTILINE)
 
 
-def extract_omnidocbench_metrics(action: dict[str, Any], *, workspace: Path) -> dict[str, Any]:
-    cwd = Path(action.get("cwd") or workspace)
-    text = _read_text(action, cwd=cwd)
-    clean_text = ANSI_ESCAPE_RE.sub("", text)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Extract OmniDocBench metrics from a real benchmark log.")
+    parser.add_argument("--log-path", required=True)
+    parser.add_argument("--cwd", required=True)
+    parser.add_argument("--markdown-path")
+    parser.add_argument("--workspace")
+    parser.add_argument("--overwrite", action="store_true")
+    args = parser.parse_args(argv)
+
+    try:
+        result = extract_metrics(
+            log_path=Path(args.log_path),
+            cwd=Path(args.cwd),
+            markdown_path=Path(args.markdown_path) if args.markdown_path else None,
+            workspace=Path(args.workspace) if args.workspace else None,
+            append=not args.overwrite,
+        )
+    except Exception as exc:
+        sys.stderr.write(f"ERROR: {exc}\n")
+        return 2
+
+    sys.stdout.write(json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n")
+    return 0
+
+
+def extract_metrics(
+    *,
+    log_path: Path,
+    cwd: Path,
+    markdown_path: Path | None,
+    workspace: Path | None,
+    append: bool,
+) -> dict[str, object]:
+    if not log_path.is_absolute():
+        log_path = cwd / log_path
+    if not log_path.exists():
+        raise FileNotFoundError(f"log file does not exist: {log_path}")
+
+    clean_text = ANSI_ESCAPE_RE.sub("", log_path.read_text(encoding="utf-8", errors="replace"))
     run_id = _extract_run_id(clean_text)
     metrics = _extract_metrics(clean_text)
     report_files, report_files_abs = _extract_report_files(clean_text, cwd=cwd)
     markdown = _metrics_markdown(run_id=run_id, metrics=metrics, report_files=report_files_abs)
 
-    markdown_path = action.get("markdown_path")
-    if isinstance(markdown_path, str) and markdown_path:
-        resolved_markdown_path = resolve_write_path(
-            markdown_path,
-            workspace=workspace,
-            field="extract_omnidocbench_metrics.markdown_path",
-        )
-        _write_markdown(resolved_markdown_path, markdown, append=bool(action.get("append", True)))
-    else:
-        resolved_markdown_path = None
+    resolved_markdown_path = None
+    if markdown_path is not None:
+        if workspace is None:
+            raise ValueError("--workspace is required when --markdown-path is provided")
+        resolved_markdown_path = _resolve_workspace_path(markdown_path, workspace=workspace)
+        _write_markdown(resolved_markdown_path, markdown, append=append)
 
     return {
-        "action": "extract_omnidocbench_metrics",
         "run_id": run_id,
         "metrics": metrics,
         "metrics_markdown": markdown,
@@ -53,20 +83,6 @@ def extract_omnidocbench_metrics(action: dict[str, Any], *, workspace: Path) -> 
     }
 
 
-def _read_text(action: dict[str, Any], *, cwd: Path) -> str:
-    parts: list[str] = []
-    if isinstance(action.get("text"), str):
-        parts.append(action["text"])
-    if isinstance(action.get("log_path"), str):
-        log_path = Path(action["log_path"])
-        if not log_path.is_absolute():
-            log_path = cwd / log_path
-        parts.append(log_path.read_text(encoding="utf-8", errors="replace"))
-    if not parts:
-        raise AgentLoopError("extract_omnidocbench_metrics requires text or log_path")
-    return "\n".join(parts)
-
-
 def _extract_run_id(text: str) -> str | None:
     match = RUN_REPORT_RE.search(text)
     return match.group(1) if match else None
@@ -74,13 +90,13 @@ def _extract_run_id(text: str) -> str | None:
 
 def _extract_metrics(text: str) -> dict[str, float]:
     if "[notebook_metric_summary]" not in text:
-        raise AgentLoopError("could not find [notebook_metric_summary] in OmniDocBench output")
+        raise ValueError("could not find [notebook_metric_summary] in OmniDocBench output")
     after_marker = text.split("[notebook_metric_summary]", 1)[1]
     block = after_marker.split("\n[", 1)[0]
     metrics = {name: float(value) for name, value in METRIC_RE.findall(block)}
     missing = [name for name in EXPECTED_METRICS if name not in metrics]
     if missing:
-        raise AgentLoopError(f"missing OmniDocBench metric(s): {', '.join(missing)}")
+        raise ValueError(f"missing OmniDocBench metric(s): {', '.join(missing)}")
     return {name: metrics[name] for name in EXPECTED_METRICS}
 
 
@@ -111,6 +127,22 @@ def _metrics_markdown(*, run_id: str | None, metrics: dict[str, float], report_f
     return "\n".join(lines) + "\n"
 
 
+def _resolve_workspace_path(path: Path, *, workspace: Path) -> Path:
+    root = workspace.resolve()
+    resolved = (root / path).resolve() if not path.is_absolute() else path.resolve()
+    if not _is_relative_to(resolved, root):
+        raise ValueError(f"markdown path outside workspace: {resolved}")
+    return resolved
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
 def _write_markdown(path: Path, markdown: str, *, append: bool) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if append and path.exists():
@@ -118,3 +150,7 @@ def _write_markdown(path: Path, markdown: str, *, append: bool) -> None:
             f.write("\n" + markdown)
     else:
         path.write_text(markdown, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
