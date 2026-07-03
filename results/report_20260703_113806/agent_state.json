@@ -1,0 +1,182 @@
+{
+  "history": [
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "ls",
+          "-d",
+          "/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416"
+        ]
+      },
+      "iteration": 1,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416\n"
+      },
+      "tool_call_id": "chatcmpl-tool-ac05a005ee048871",
+      "ts": "2026-07-03T03:38:15Z"
+    },
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "ls",
+          "-d",
+          "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old"
+        ]
+      },
+      "iteration": 1,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old\n"
+      },
+      "tool_call_id": "chatcmpl-tool-afaf9b03191f2132",
+      "ts": "2026-07-03T03:38:15Z"
+    },
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "ls",
+          "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old/scripts/evaluate_qwen3_5_vllm_agent.sh"
+        ]
+      },
+      "iteration": 1,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old/scripts/evaluate_qwen3_5_vllm_agent.sh\n"
+      },
+      "tool_call_id": "chatcmpl-tool-8c6736533e5729c3",
+      "ts": "2026-07-03T03:38:15Z"
+    },
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "ls",
+          "-d",
+          "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench"
+        ]
+      },
+      "iteration": 1,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench\n"
+      },
+      "tool_call_id": "chatcmpl-tool-9a41d0c549e52181",
+      "ts": "2026-07-03T03:38:15Z"
+    },
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "ls",
+          "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench/pdf_validation.py"
+        ]
+      },
+      "iteration": 1,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/home/ma-user/work/wangbaode/07_evaluate/OmniDocBench/pdf_validation.py\n"
+      },
+      "tool_call_id": "chatcmpl-tool-8be28befd9c1a7e2",
+      "ts": "2026-07-03T03:38:15Z"
+    },
+    {
+      "action": {
+        "action": "run_command",
+        "argv": [
+          "mkdir",
+          "-p",
+          "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806"
+        ]
+      },
+      "iteration": 2,
+      "result": {
+        "action": "run_command",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ""
+      },
+      "tool_call_id": "chatcmpl-tool-9774a399a04ca132",
+      "ts": "2026-07-03T03:38:18Z"
+    },
+    {
+      "action": {
+        "action": "start_long_command",
+        "argv": [
+          "bash",
+          "scripts/evaluate_qwen3_5_vllm_agent.sh",
+          "model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
+          "omnidocbench_v1_6",
+          "4"
+        ],
+        "command_id": "omnidocbench_v1_6-20260703_033806-inference",
+        "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+        "label": "lmms-eval-old omnidocbench_v1_6",
+        "skill_type": "inference"
+      },
+      "iteration": 3,
+      "result": {
+        "action": "start_long_command",
+        "command_id": "omnidocbench_v1_6-20260703_033806-inference",
+        "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+        "ended_at": null,
+        "label": "lmms-eval-old omnidocbench_v1_6",
+        "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/output.log",
+        "log_tail": "",
+        "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/status.json",
+        "pid": 8623,
+        "returncode": null,
+        "signal": null,
+        "skill_type": "inference",
+        "spec_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/spec.json",
+        "started_at": "2026-07-03T03:38:25Z",
+        "status": "running",
+        "supervisor_pid": 8621
+      },
+      "tool_call_id": "chatcmpl-tool-a671a99e24486c0a",
+      "ts": "2026-07-03T03:38:25Z"
+    },
+    {
+      "action": {
+        "action": "wait_long_command",
+        "command_id": "omnidocbench_v1_6-20260703_033806-inference",
+        "timeout_sec": 86400
+      },
+      "iteration": 4,
+      "result": {
+        "action": "wait_long_command",
+        "command_id": "omnidocbench_v1_6-20260703_033806-inference",
+        "cwd": "/home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old",
+        "ended_at": "2026-07-03T05:54:24Z",
+        "label": "lmms-eval-old omnidocbench_v1_6",
+        "log_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/output.log",
+        "log_tail": "[0m\n\u001b[32m2026-07-03 13:53:23.594\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m339\u001b[0m - \u001b[1mmin_pixels: 2048, max_pixels: 16777216\u001b[0m\n\u001b[32m2026-07-03 13:53:24.300\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m374\u001b[0m - \u001b[1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:24.306\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m327\u001b[0m - \u001b[1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:24.306\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m339\u001b[0m - \u001b[1mmin_pixels: 2048, max_pixels: 16777216\u001b[0m\n\u001b[32m2026-07-03 13:53:24.944\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m374\u001b[0m - \u001b[1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\nModel Responding: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋| 1648/1651 [2:12:36<00:05,  1.72s/it]\u001b[32m2026-07-03 13:53:30.121\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m327\u001b[0m - \u001b[1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:30.121\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m339\u001b[0m - \u001b[1mmin_pixels: 2048, max_pixels: 16777216\u001b[0m\n\u001b[32m2026-07-03 13:53:30.494\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m374\u001b[0m - \u001b[1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:30.495\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m327\u001b[0m - \u001b[1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:30.495\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m339\u001b[0m - \u001b[1mmin_pixels: 2048, max_pixels: 16777216\u001b[0m\n\u001b[32m2026-07-03 13:53:31.171\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m374\u001b[0m - \u001b[1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:31.173\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m327\u001b[0m - \u001b[1muse customized prompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\u001b[32m2026-07-03 13:53:31.173\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m339\u001b[0m - \u001b[1mmin_pixels: 2048, max_pixels: 16777216\u001b[0m\n\u001b[32m2026-07-03 13:53:31.866\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.models.qwen3_5_vllm\u001b[0m:\u001b[36mgenerate_until\u001b[0m:\u001b[36m374\u001b[0m - \u001b[1mPrompt: You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:\n\n1. Text Processing:\n- Accurately recognize all text content in the PDF image without guessing or inferring.\n- Convert the recognized text into Markdown format.\n- Maintain the original document structure, including headings, paragraphs, lists, etc.\n\n2. Mathematical Formula Processing:\n- Convert all mathematical formulas to LaTeX format.\n- Enclose inline formulas with $ $. For example: This is an inline formula $E = mc^2$\n- Enclose block formulas with $$ $$. For example: $$\\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$\n\n3. Table Processing:\n- Convert tables to HTML format.\n\n4. Figure Handling:\n- Ignore figures content in the PDF image. Do not attempt to describe or convert images.\n\n5. Output Format:\n- Ensure the output Markdown document has a clear structure with appropriate line breaks between elements.\n- For complex layouts, try to maintain the original document's structure and format as closely as possible.\n\nPlease strictly follow these guidelines to ensure accuracy and consistency in the conversion. Your task is to accurately convert the content of the PDF image into Markdown format without adding any extra explanations or comments.\u001b[0m\n\nModel Responding: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1651/1651 [2:12:40<00:00,  1.65s/it]\nModel Responding: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1651/1651 [2:12:40<00:00,  4.82s/it]\n\nPostprocessing:   0%|                                                                                                                                                                                    | 0/1651 [00:00<?, ?it/s]\nPostprocessing:  16%|██████████████████████████                                                                                                                                              | 256/1651 [00:00<00:00, 2557.58it/s]\nPostprocessing:  32%|█████████████████████████████████████████████████████▋                                                                                                                  | 527/1651 [00:00<00:00, 2646.77it/s]\nPostprocessing:  48%|█████████████████████████████████████████████████████████████████████████████████▎                                                                                      | 799/1651 [00:00<00:00, 2654.04it/s]\nPostprocessing:  65%|███████████████████████████████████████████████████████████████████████████████████████████████████████████▋                                                           | 1065/1651 [00:00<00:00, 1947.97it/s]\nPostprocessing:  81%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████                                | 1335/1651 [00:00<00:00, 2163.65it/s]\nPostprocessing: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1651/1651 [00:00<00:00, 2423.63it/s]\n\u001b[32m2026-07-03 13:53:35.235\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.loggers.evaluation_tracker\u001b[0m:\u001b[36msave_results_aggregated\u001b[0m:\u001b[36m188\u001b[0m - \u001b[1mSaving results aggregated\u001b[0m\n\u001b[32m2026-07-03 13:53:35.252\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.loggers.evaluation_tracker\u001b[0m:\u001b[36msave_results_samples\u001b[0m:\u001b[36m255\u001b[0m - \u001b[1mSaving per-sample results for: omnidocbench_v1_6\u001b[0m\n\u001b[32m2026-07-03 13:53:35.255\u001b[0m | \u001b[1mINFO    \u001b[0m | \u001b[36mlmms_eval.loggers.evaluation_tracker\u001b[0m:\u001b[36msave_results_samples\u001b[0m:\u001b[36m262\u001b[0m - \u001b[1mResults saved in logs/qwen3_5_vllm/omnidocbench_v1_6/20260703_114052_samples_omnidocbench_v1_6.jsonl\u001b[0m\nqwen3_5_vllm (api_base=http://127.0.0.1:8000/v1,model_version=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/ms-swift/output/qwen3_5_2b_sft_data_20k_lre_6/v0-20260702-143628/checkpoint-416,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja), gen_kwargs: (), limit: None, num_fewshot: None, batch_size: 4\n|      Tasks      |Version|Filter|n-shot|Metric|   |Value |   |Stderr|\n|-----------------|-------|------|-----:|------|---|-----:|---|-----:|\n|omnidocbench_v1_6|Yaml   |none  |     0|ned_1 |↑  |0.0006|±  |0.0006|\n\n\n>>> Evaluation complete. Logs saved to: ./logs/qwen3_5_vllm/omnidocbench_v1_6\n>>> Cleaning up vLLM server processes...\n>>> Waiting for GPU resources to be released...\nscripts/evaluate_qwen3_5_vllm_agent.sh: line 87:  8662 Killed                  setsid vllm serve \"${MODEL_PATH}\" --trust-remote-code --default-chat-template-kwargs '{\"enable_thinking\": false}' --host \"${VLLM_HOST}\" --port \"${BASE_PORT}\" --tensor-parallel-size \"${TP}\" --gpu-memory-utilization 0.85 --max-model-len 65536 --mm-encoder-tp-mode data --mm-processor-cache-type shm --enable-prefix-caching >> ${LOG_PATH} 2>&1\n",
+        "metadata_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/status.json",
+        "pid": 8623,
+        "returncode": 0,
+        "signal": null,
+        "skill_type": "inference",
+        "spec_path": "/inspire/sfs/project/inf-multimodal/public/wangbaode/07_evaluate/eval-agent/results/report_20260703_113806/.eval_agent/commands/omnidocbench_v1_6-20260703_033806-inference/spec.json",
+        "started_at": "2026-07-03T03:38:25Z",
+        "status": "succeeded",
+        "supervisor_pid": 8621
+      },
+      "tool_call_id": "chatcmpl-tool-b9e62fc77653186a",
+      "ts": "2026-07-03T05:54:24Z"
+    }
+  ],
+  "status": "wait_long_command"
+}

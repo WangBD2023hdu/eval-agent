@@ -55,7 +55,7 @@ Use the agent loop `start_long_command` action with `cwd` set to the working dir
     "scripts/evaluate_qwen3_5_vllm_agent.sh",
     "model_version=<model_weight>,tensor_parallel_size=2,prompt=lmms_eval/prompts/prompt_infinity_parser2_doc2md.jinja",
     "<task>",
-    "4"
+    "32"
   ]
 }
 ```
