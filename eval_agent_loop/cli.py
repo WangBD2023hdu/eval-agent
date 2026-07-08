@@ -9,12 +9,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
+from .batch.runner import run_batch
 from .core.client import OpenAIChatClient
 from .core.config import AgentConfig
 from .core.errors import AgentLoopError
 from .core.progress import stderr_progress
 from .loop.runner import run_loop
-from .loop.skills import default_task_skill_name
+from .loop.skills import (
+    default_evaluation_skill_name,
+    default_inference_skill_name,
+    default_task_skill_name,
+)
 from .tools.long_commands.manager import cancel_active_long_commands
 
 
@@ -31,6 +36,7 @@ class RuntimePaths:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a real OpenAI-compatible evaluation agent loop.")
     parser.add_argument("--job", help="Path to job JSON/YAML. Optional when --checkpoint, --task, and --report-dir are provided.")
+    parser.add_argument("--batch-jsonl", help="Path to JSONL manifest with entries like {\"ckp\": \"...\", \"task\": [\"...\"]}; runs entries serially.")
     parser.add_argument("--skills-dir", default="SKILLS", help="Directory containing inference/evaluation/task skills")
     parser.add_argument("--state", help="Path to persistent state JSON")
     parser.add_argument("--workspace", help="Workspace and write root for agent-managed files")
@@ -42,8 +48,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--report-dir", help="Directory where generated job, state, logs, and report artifacts should live; used as write root when --workspace is omitted")
     parser.add_argument("--run-id", help="Run identifier for generated jobs")
     parser.add_argument("--task-skill", help="Task orchestration skill name for generated jobs")
-    parser.add_argument("--inference-skill", default="lmms-eval-old", help="Inference skill name for generated jobs")
-    parser.add_argument("--evaluation-skill", default="omnidocbench", help="Evaluation skill name for generated jobs")
+    parser.add_argument("--inference-skill", help="Inference skill name for generated jobs; defaults from --task")
+    parser.add_argument("--evaluation-skill", help="Evaluation skill name for generated jobs; defaults from --task")
     parser.add_argument("--worker-cuda-visible-devices", help="CUDA_VISIBLE_DEVICES for skill subprocesses, e.g. 0,1")
     parser.add_argument("--max-iterations", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=None)
@@ -64,6 +70,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.temperature is not None:
         env["AGENT_TEMPERATURE"] = str(args.temperature)
     apply_worker_environment(args)
+
+    if args.batch_jsonl:
+        _validate_generated_runtime(args)
+        result = run_batch(args)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+        return 0
 
     runtime = prepare_runtime(args)
     config = AgentConfig.from_env(env)
@@ -147,6 +159,8 @@ def prepare_runtime(args: argparse.Namespace) -> RuntimePaths:
 def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[str, object]:
     run_id = args.run_id or f"{args.task}-{time.strftime('%Y%m%d_%H%M%S', time.gmtime())}"
     task_skill = args.task_skill or default_task_skill_name(args.task)
+    inference_skill = args.inference_skill or default_inference_skill_name(args.task)
+    evaluation_skill = args.evaluation_skill or default_evaluation_skill_name(args.task)
     return {
         "run_id": run_id,
         "agent": {
@@ -161,12 +175,12 @@ def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[
             "skill": task_skill,
         },
         "inference": {
-            "skill": args.inference_skill,
+            "skill": inference_skill,
             "model_weight": args.checkpoint,
             "task": args.task,
         },
         "evaluation": {
-            "skill": args.evaluation_skill,
+            "skill": evaluation_skill,
             "task": args.task,
         },
         "runtime": {
@@ -181,7 +195,8 @@ def _build_generated_job(args: argparse.Namespace, *, report_dir: Path) -> dict[
 
 
 def _validate_generated_runtime(args: argparse.Namespace) -> None:
-    if args.inference_skill != "lmms-eval-old" or not args.base_url:
+    inference_skill = args.inference_skill or default_inference_skill_name(getattr(args, "task", None))
+    if inference_skill != "lmms-eval-old" or not args.base_url:
         return
 
     parsed = urlparse(args.base_url)
@@ -192,7 +207,7 @@ def _validate_generated_runtime(args: argparse.Namespace) -> None:
         raise AgentLoopError(f"invalid --base-url: {args.base_url}") from exc
     if hostname in {"127.0.0.1", "localhost", "::1"} and port == 8000:
         raise AgentLoopError(
-            "agent --base-url uses local port 8000, but lmms-eval-old also uses "
-            "http://localhost:8000/v1 for inference. Start the agent model on a "
+            "agent --base-url uses local port 8000, but LMMS Eval inference skills also use "
+            "http://localhost:8000/v1 for worker-side vLLM. Start the agent model on a "
             "different port, for example 8001, and pass --base-url http://127.0.0.1:8001/v1."
         )

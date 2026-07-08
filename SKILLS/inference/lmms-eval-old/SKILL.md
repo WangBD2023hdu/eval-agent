@@ -1,6 +1,6 @@
 ---
 name: lmms-eval-old
-description: Run the real legacy LMMS Eval script at /home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old for Qwen3.5/vLLM inference. Use when the task asks to run lmms-eval-old with a model weight path and task name, especially the default model weight under the DocVEP checkpoint and task omnidocbench_v1_6.
+description: Run the real legacy LMMS Eval script at /home/ma-user/work/wangbaode/07_evaluate/lmms-eval-old for Qwen3.5/vLLM inference. Use when OmniDocBench or olmOCR Bench needs LMMS Eval inference with a model weight path and task name.
 ---
 
 # LMMS Eval Old
@@ -20,6 +20,8 @@ Default values for the current evaluation:
 model_weight=/inspire/sfs/project/inf-multimodal/public/wangbaode/01_gitlab/verl/checkpoints/DocVEP/infinity_parser3_doc2md_random_text_privileged_megatron/global_step_300/actor/model/huggingface
 task=omnidocbench_v1_6
 ```
+
+For olmOCR Bench, use the same command, prompt, tensor-parallel setting, batch-size setting, and extraction script; only pass `task=olmOCR_bench_250802`.
 
 The prompt template and tensor parallel size are fixed for this skill unless the user explicitly changes them:
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
@@ -31,11 +32,21 @@ def start_long_command(action: dict[str, Any], *, workspace: Path) -> dict[str, 
     cwd = Path(action.get("cwd") or workspace)
     command_id = action.get("command_id") or _new_command_id()
     command_dir_path = command_dir(action, workspace=workspace, command_id=command_id)
-    command_dir_path.mkdir(parents=True, exist_ok=False)
-
     log_path = resolve_log_path(action.get("log_path"), workspace=workspace, command_dir_path=command_dir_path)
     status_path = command_dir_path / "status.json"
     spec_path = command_dir_path / "spec.json"
+    spec = _command_spec(action, cwd=cwd, log_path=log_path, status_path=status_path)
+
+    try:
+        command_dir_path.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        return _existing_command_result(
+            command_id=command_id,
+            status_path=status_path,
+            spec_path=spec_path,
+            desired_spec=spec,
+        )
+
     metadata = {
         "action": "long_command",
         "command_id": command_id,
@@ -55,16 +66,7 @@ def start_long_command(action: dict[str, Any], *, workspace: Path) -> dict[str, 
         "spec_path": str(spec_path),
     }
     write_metadata(status_path, metadata)
-    write_metadata(
-        spec_path,
-        {
-            "argv": action["argv"],
-            "cwd": str(cwd),
-            "env": action.get("env", {}),
-            "log_path": str(log_path),
-            "metadata_path": str(status_path),
-        },
-    )
+    write_metadata(spec_path, spec)
 
     supervisor_env = os.environ.copy()
     project_root = str(Path(__file__).resolve().parents[3])
@@ -163,6 +165,70 @@ def cancel_active_long_commands(*, grace_sec: float = 5) -> list[dict[str, Any]]
 def _watch_process(handle: LongCommandHandle) -> None:
     handle.process.wait()
     handle.done.set()
+
+
+def _command_spec(action: dict[str, Any], *, cwd: Path, log_path: Path, status_path: Path) -> dict[str, Any]:
+    return {
+        "argv": action["argv"],
+        "cwd": str(cwd),
+        "env": action.get("env", {}),
+        "log_path": str(log_path),
+        "metadata_path": str(status_path),
+    }
+
+
+def _existing_command_result(
+    *,
+    command_id: str,
+    status_path: Path,
+    spec_path: Path,
+    desired_spec: dict[str, Any],
+) -> dict[str, Any]:
+    existing_spec = _read_json_or_none(spec_path)
+    existing_metadata = _read_json_or_none(status_path)
+    if existing_spec == desired_spec and existing_metadata:
+        result = result_from_metadata("start_long_command", existing_metadata)
+        result["already_exists"] = True
+        result["message"] = "command_id already exists; returned existing command status"
+        return result
+
+    result: dict[str, Any] = {
+        "action": "start_long_command",
+        "command_id": command_id,
+        "status": "conflict",
+        "error": "command directory already exists; use inspect_long_command for the existing command or choose a new command_id",
+        "metadata_path": str(status_path),
+        "spec_path": str(spec_path),
+        "already_exists": True,
+    }
+    if existing_metadata:
+        result.update(
+            {
+                "existing_status": existing_metadata.get("status"),
+                "returncode": existing_metadata.get("returncode"),
+                "signal": existing_metadata.get("signal"),
+                "pid": existing_metadata.get("pid"),
+                "supervisor_pid": existing_metadata.get("supervisor_pid"),
+                "label": existing_metadata.get("label"),
+                "skill_type": existing_metadata.get("skill_type"),
+                "cwd": existing_metadata.get("cwd"),
+                "started_at": existing_metadata.get("started_at"),
+                "ended_at": existing_metadata.get("ended_at"),
+                "log_path": existing_metadata.get("log_path"),
+            }
+        )
+    if existing_spec is None:
+        result["error"] = "command directory already exists but spec.json is missing; inspect the command directory or choose a new command_id"
+    elif existing_metadata is None:
+        result["error"] = "command directory already exists but status.json is missing; inspect the command directory or choose a new command_id"
+    return result
+
+
+def _read_json_or_none(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else None
 
 
 def _wait_for_started_metadata(metadata_path: Path, *, timeout_sec: float) -> dict[str, Any]:

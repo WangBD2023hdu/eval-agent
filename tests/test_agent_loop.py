@@ -42,6 +42,7 @@ class ScriptedToolClient:
 class AgentLoopContractTests(unittest.TestCase):
     def test_agent_loop_package_uses_only_canonical_modules(self):
         for module_name in (
+            "eval_agent_loop.batch.runner",
             "eval_agent_loop.core.config",
             "eval_agent_loop.core.errors",
             "eval_agent_loop.core.path_policy",
@@ -87,7 +88,7 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(existing, [])
 
     def test_agent_tool_layer_has_no_task_specific_logic(self):
-        forbidden_terms = ("lmms", "omnidocbench")
+        forbidden_terms = ("lmms", "omnidocbench", "olmocr")
         for path in Path("eval_agent_loop/tools").rglob("*.py"):
             text = path.read_text(encoding="utf-8").lower()
             for term in forbidden_terms:
@@ -496,6 +497,77 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertIsNone(result["signal"])
         self.assertIn("benchmark failed", result["log_tail"])
 
+    def test_start_long_command_reuses_existing_command_when_spec_matches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            action = {
+                "action": "start_long_command",
+                "command_id": "fixed-command",
+                "argv": [sys.executable, "-c", "import time; time.sleep(0.2); print('done')"],
+                "cwd": str(root),
+                "skill_type": "evaluation",
+                "label": "retryable-start",
+            }
+
+            first = execute_action(action, workspace=root)
+            second = execute_action(action, workspace=root)
+            result = execute_action(
+                {
+                    "action": "wait_long_command",
+                    "command_id": first["command_id"],
+                    "timeout_sec": 5,
+                },
+                workspace=root,
+            )
+
+        self.assertEqual(first["command_id"], "fixed-command")
+        self.assertEqual(second["command_id"], "fixed-command")
+        self.assertEqual(second["status"], "running")
+        self.assertTrue(second["already_exists"])
+        self.assertEqual(second["metadata_path"], first["metadata_path"])
+        self.assertEqual(result["status"], "succeeded")
+
+    def test_start_long_command_reports_conflict_when_existing_command_spec_differs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = execute_action(
+                {
+                    "action": "start_long_command",
+                    "command_id": "fixed-command",
+                    "argv": [sys.executable, "-c", "import time; time.sleep(0.2); print('first')"],
+                    "cwd": str(root),
+                    "skill_type": "evaluation",
+                    "label": "first-start",
+                },
+                workspace=root,
+            )
+            conflict = execute_action(
+                {
+                    "action": "start_long_command",
+                    "command_id": "fixed-command",
+                    "argv": [sys.executable, "-c", "print('second')"],
+                    "cwd": str(root),
+                    "skill_type": "evaluation",
+                    "label": "second-start",
+                },
+                workspace=root,
+            )
+            result = execute_action(
+                {
+                    "action": "wait_long_command",
+                    "command_id": first["command_id"],
+                    "timeout_sec": 5,
+                },
+                workspace=root,
+            )
+
+        self.assertEqual(conflict["action"], "start_long_command")
+        self.assertEqual(conflict["command_id"], "fixed-command")
+        self.assertEqual(conflict["status"], "conflict")
+        self.assertIn("already exists", conflict["error"])
+        self.assertEqual(conflict["metadata_path"], first["metadata_path"])
+        self.assertEqual(result["status"], "succeeded")
+
     def test_long_command_wait_recovers_after_starting_agent_process_exits(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -645,10 +717,35 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertEqual(job["checkpoint"]["path"], "/models/checkpoint-a")
         self.assertEqual(job["task"]["name"], "omnidocbench_v1_6")
         self.assertEqual(job["task"]["skill"], "omnidocbench_task")
+        self.assertEqual(job["inference"]["skill"], "lmms-eval-old")
         self.assertEqual(job["evaluation"]["skill"], "omnidocbench")
         self.assertEqual(job["outputs"]["report_dir"], str(report_dir.resolve()))
         self.assertEqual(runtime.state_path, report_dir.resolve() / "agent_state.json")
         self.assertEqual(runtime.workspace, report_dir.resolve())
+
+    def test_cli_can_generate_olmocr_job_with_task_chain_defaults(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_dir = Path(tmp) / "report"
+            args = agent_cli.parse_args(
+                [
+                    "--base-url",
+                    "http://127.0.0.1:6666/v1",
+                    "--agent-model",
+                    "qwen-agent",
+                    "--checkpoint",
+                    "/models/checkpoint-a",
+                    "--task",
+                    "olmOCR_bench_250802",
+                    "--report-dir",
+                    str(report_dir),
+                ]
+            )
+            runtime = agent_cli.prepare_runtime(args)
+            job = json.loads(runtime.job_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(job["task"]["skill"], "olmocr_task")
+        self.assertEqual(job["inference"]["skill"], "lmms-eval-old")
+        self.assertEqual(job["evaluation"]["skill"], "olmocr")
 
     def test_generated_lmms_eval_old_job_rejects_agent_on_local_port_8000(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -696,6 +793,125 @@ class AgentLoopContractTests(unittest.TestCase):
             job = json.loads(runtime.job_path.read_text(encoding="utf-8"))
 
         self.assertEqual(job["runtime"]["worker_cuda_visible_devices"], "0,1")
+
+    def test_batch_jsonl_expands_checkpoints_and_tasks_to_serial_jobs(self):
+        from eval_agent_loop.batch.runner import run_batch
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "checkpoints.jsonl"
+            manifest.write_text(
+                "\n".join(
+                    [
+                        json.dumps({"ckp": "/models/checkpoint-416", "task": ["omnidocbench_v1_6", "task_b"]}),
+                        json.dumps({"ckp": "/models/checkpoint-500", "task": ["omnidocbench_v1_6"]}),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            report_root = root / "batch"
+            calls = []
+
+            def fake_run_one(*, job_path, state_path, workspace):
+                calls.append(
+                    {
+                        "job_path": Path(job_path),
+                        "state_path": Path(state_path),
+                        "workspace": Path(workspace),
+                        "job": json.loads(Path(job_path).read_text(encoding="utf-8")),
+                    }
+                )
+                return {"action": "finish", "message": "ok"}
+
+            args = agent_cli.parse_args(
+                [
+                    "--base-url",
+                    "http://127.0.0.1:6666/v1",
+                    "--agent-model",
+                    "qwen-agent",
+                    "--api-key",
+                    "EMPTY",
+                    "--batch-jsonl",
+                    str(manifest),
+                    "--report-dir",
+                    str(report_root),
+                    "--skills-dir",
+                    "SKILLS",
+                    "--worker-cuda-visible-devices",
+                    "0,1",
+                    "--max-iterations",
+                    "50",
+                ]
+            )
+
+            result = run_batch(args, run_one_job=fake_run_one)
+            summary_jsonl_exists = (report_root / "batch_summary.jsonl").exists()
+            summary_md_exists = (report_root / "batch_summary.md").exists()
+
+        self.assertEqual(result["action"], "batch_finish")
+        self.assertEqual(result["total"], 3)
+        self.assertEqual(result["succeeded"], 3)
+        self.assertEqual(result["failed"], 0)
+        self.assertEqual([call["job"]["checkpoint"]["path"] for call in calls], ["/models/checkpoint-416", "/models/checkpoint-416", "/models/checkpoint-500"])
+        self.assertEqual([call["job"]["task"]["name"] for call in calls], ["omnidocbench_v1_6", "task_b", "omnidocbench_v1_6"])
+        self.assertTrue(all(call["workspace"] == call["job_path"].parent for call in calls))
+        self.assertTrue(all(call["state_path"] == call["job_path"].parent / "agent_state.json" for call in calls))
+        self.assertTrue(summary_jsonl_exists)
+        self.assertTrue(summary_md_exists)
+        self.assertIn("checkpoint-416", calls[0]["job_path"].parent.name)
+        self.assertIn("omnidocbench_v1_6", calls[0]["job_path"].parent.name)
+
+    def test_batch_jsonl_records_failure_and_continues_serial_execution(self):
+        from eval_agent_loop.batch.runner import run_batch
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = root / "checkpoints.jsonl"
+            manifest.write_text(
+                json.dumps({"ckp": "/models/checkpoint-416", "task": ["task_a", "task_b"]}) + "\n",
+                encoding="utf-8",
+            )
+            report_root = root / "batch"
+            calls = []
+
+            def fake_run_one(*, job_path, state_path, workspace):
+                calls.append(Path(job_path))
+                if len(calls) == 1:
+                    raise AgentLoopError("first failed")
+                return {"action": "finish", "message": "second ok"}
+
+            args = agent_cli.parse_args(
+                [
+                    "--base-url",
+                    "http://127.0.0.1:6666/v1",
+                    "--agent-model",
+                    "qwen-agent",
+                    "--api-key",
+                    "EMPTY",
+                    "--batch-jsonl",
+                    str(manifest),
+                    "--report-dir",
+                    str(report_root),
+                    "--skills-dir",
+                    "SKILLS",
+                ]
+            )
+
+            result = run_batch(args, run_one_job=fake_run_one)
+            summary_lines = [
+                json.loads(line)
+                for line in (report_root / "batch_summary.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(result["succeeded"], 1)
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual(summary_lines[0]["status"], "failed")
+        self.assertEqual(summary_lines[1]["status"], "succeeded")
+        self.assertIn("first failed", summary_lines[0]["error"])
 
     def test_cli_worker_cuda_visible_devices_updates_process_environment(self):
         args = agent_cli.parse_args(
@@ -770,6 +986,118 @@ class AgentLoopContractTests(unittest.TestCase):
         self.assertNotIn("extract_lmms_eval_samples", skill)
         self.assertNotIn("extract_omnidocbench_metrics", skill)
         self.assertLess(skill.index("scripts/extract_samples.py"), skill.index("scripts/extract_metrics.py"))
+
+    def test_olmocr_task_name_defaults_to_olmocr_task_skill(self):
+        from eval_agent_loop.loop.skills import default_task_skill_name
+
+        self.assertEqual(default_task_skill_name("olmOCR_bench_250802"), "olmocr_task")
+        self.assertEqual(default_task_skill_name("olmocr_bench_250802"), "olmocr_task")
+
+    def test_olmocr_task_skill_documents_full_chain(self):
+        skill = Path("SKILLS/task/olmocr_task/SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("lmms-eval-old", skill)
+        self.assertIn("olmocr", skill)
+        self.assertIn("start_long_command", skill)
+        self.assertIn("wait_long_command", skill)
+        self.assertIn("scripts/extract_samples.py", skill)
+        self.assertIn("scripts/extract_metrics.py", skill)
+        self.assertIn("infinity_parser2_jsonl2md.py", skill)
+        self.assertNotIn("lmms-eval-olmocr", skill)
+        self.assertLess(skill.index("scripts/extract_samples.py"), skill.index("infinity_parser2_jsonl2md.py"))
+        self.assertLess(skill.index("infinity_parser2_jsonl2md.py"), skill.index("scripts/extract_metrics.py"))
+
+    def test_lmms_eval_old_skill_script_extracts_olmocr_samples_from_log(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sample_path = root / "logs/qwen3_5_vllm/olmOCR_bench_250802/20260708_010203_samples_olmOCR_bench_250802.jsonl"
+            sample_path.parent.mkdir(parents=True)
+            sample_path.write_text('{"sample_id":"1"}\n', encoding="utf-8")
+            log_path = root / "output.log"
+            log_path.write_text(
+                "\x1b[32mINFO\x1b[0m - Results saved in "
+                "logs/qwen3_5_vllm/olmOCR_bench_250802/20260708_010203_samples_olmOCR_bench_250802.jsonl\n",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/inference/lmms-eval-old/scripts/extract_samples.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                    "--task",
+                    "olmOCR_bench_250802",
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            result = json.loads(completed.stdout)
+
+        self.assertEqual(result["samples_jsonl_abs"], str(sample_path.resolve()))
+        self.assertEqual(result["next_skill_input"]["prediction_jsonl"], str(sample_path.resolve()))
+        self.assertEqual(result["next_skill_input"]["task"], "olmOCR_bench_250802")
+
+    def test_olmocr_skill_script_extracts_summary_and_writes_markdown_report_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report_path = root / "report.md"
+            log_path = root / "output.log"
+            log_path.write_text(
+                """
+Final Summary with 95% Confidence Intervals:
+qwen3_5_vllm_20260409_095034 : Average Score: 86.7% \u00b1 0.8% (average of per-JSONL scores)
+    absent   : 93.7% average pass rate over 823 tests
+    baseline : 99.7% average pass rate over 1403 tests
+    math     : 88.6% average pass rate over 3385 tests
+    order    : 76.3% average pass rate over 1061 tests
+    present  : 78.4% average pass rate over 721 tests
+    table    : 89.4% average pass rate over 1020 tests
+
+    Results by JSONL file:
+        arxiv_math.jsonl           : 88.3% (2584/2927 tests)
+        baseline                   : 99.7% (1390/1394 tests)
+        headers_footers.jsonl      : 93.9% (714/760 tests)
+        long_tiny_text.jsonl       : 91.6% (405/442 tests)
+        multi_column.jsonl         : 83.6% (739/884 tests)
+        old_scans.jsonl            : 56.1% (295/526 tests)
+        old_scans_math.jsonl       : 90.8% (416/458 tests)
+        table_tests.jsonl          : 89.4% (914/1022 tests)
+""",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "SKILLS/evaluation/olmocr/scripts/extract_metrics.py",
+                    "--log-path",
+                    str(log_path),
+                    "--cwd",
+                    str(root),
+                    "--markdown-path",
+                    str(report_path),
+                    "--workspace",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            result = json.loads(completed.stdout)
+            markdown = report_path.read_text(encoding="utf-8")
+
+        self.assertEqual(result["candidate"], "qwen3_5_vllm_20260409_095034")
+        self.assertEqual(result["average_score_percent"], 86.7)
+        self.assertEqual(result["confidence_interval_percent"], 0.8)
+        self.assertEqual(result["category_scores"]["math"]["tests"], 3385)
+        self.assertEqual(result["jsonl_scores"]["arxiv_math.jsonl"]["passed"], 2584)
+        self.assertIn("| Average Score | 86.7% +/- 0.8% |", result["metrics_markdown"])
+        self.assertIn("| math | 88.6% | 3385 |", markdown)
+        self.assertIn("| arxiv_math.jsonl | 88.3% | 2584/2927 |", markdown)
 
     def test_lmms_eval_old_script_checks_root_health_without_proxy(self):
         script = Path("lmms-eval-old/scripts/evaluate_qwen3_5_vllm.sh").read_text(encoding="utf-8")

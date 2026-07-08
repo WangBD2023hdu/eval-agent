@@ -9,6 +9,13 @@ from ..core.errors import AgentLoopError
 REQUIRED_SKILLS = ("inference", "evaluation", "task")
 TASK_SKILL_DEFAULTS = {
     "omnidocbench_v1_6": "omnidocbench_task",
+    "olmOCR_bench_250802": "olmocr_task",
+    "olmocr_bench_250802": "olmocr_task",
+}
+INFERENCE_SKILL_DEFAULTS = {}
+EVALUATION_SKILL_DEFAULTS = {
+    "olmOCR_bench_250802": "olmocr",
+    "olmocr_bench_250802": "olmocr",
 }
 
 
@@ -69,7 +76,23 @@ def default_task_skill_name(task_name: str | None) -> str | None:
         return TASK_SKILL_DEFAULTS[task_name]
     if "omnidocbench" in task_name.lower():
         return "omnidocbench_task"
+    if "olmocr" in task_name.lower():
+        return "olmocr_task"
     return task_name
+
+
+def default_inference_skill_name(task_name: str | None) -> str:
+    if task_name in INFERENCE_SKILL_DEFAULTS:
+        return INFERENCE_SKILL_DEFAULTS[task_name]
+    return "lmms-eval-old"
+
+
+def default_evaluation_skill_name(task_name: str | None) -> str:
+    if task_name in EVALUATION_SKILL_DEFAULTS:
+        return EVALUATION_SKILL_DEFAULTS[task_name]
+    if task_name and "olmocr" in task_name.lower():
+        return "olmocr"
+    return "omnidocbench"
 
 
 def _referenced_skill_names(job: Any) -> dict[str, str | None]:
